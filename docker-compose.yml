@@ -1,0 +1,15 @@
+version: "3"
+services:
+  python:
+    image: pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel
+    volumes:
+      - ./:/workspace
+    tty: true
+    command: /bin/bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
