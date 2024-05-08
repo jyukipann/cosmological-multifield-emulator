@@ -15,7 +15,7 @@ if __name__ == '__main__':
         if log:
             maps[0] = np.log(maps[0])
         plt.pcolor(maps[0], cmap=cmap)
-        plt.colorbar()    
+        plt.colorbar() 
     
     fmaps = 'dataset/Maps_Mgas_IllustrisTNG_CV_z=0.00.npy'
     load_map0_and_plot(fmaps=fmaps, cmap=plt.cm.hot)
@@ -24,7 +24,6 @@ if __name__ == '__main__':
     fmaps = 'dataset/Maps_HI_IllustrisTNG_CV_z=0.00.npy'
     load_map0_and_plot(fmaps=fmaps, cmap=plt.cm.Greens)
     plt.savefig(out_dir/"first_plot_HI.png")
-    
     
     fmaps = 'dataset/Maps_B_IllustrisTNG_CV_z=0.00.npy'
     load_map0_and_plot(fmaps=fmaps, cmap=plt.cm.cividis)

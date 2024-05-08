@@ -77,6 +77,7 @@ CMD は、CAMELS プロジェクトによる何千もの最先端の (磁気) �
 - `1P`
 - `CV`
 - `LH`
+
 #### 各`sets`の説明
 Each suite contains different sets, that indicate how the value of the labels of the underlying simulations are organized:
 
@@ -101,3 +102,7 @@ Each suite contains different sets, that indicate how the value of the labels of
 `.txt`にある。
 
 ## データセットの扱い方と表示
+`.npy`形式のファイルの中身は`(n, 256, 256)`のndarrayだった（少なくとも、`Mgas`, `HI`, `B`については）。  
+1次元目で１枚取り出して、対数を取って適当なカラーマップを用いてプロットすることで、論文のような画像が作れる。  
+![Mgas data](dump/first_plot_Mgas.png)
+
