@@ -1,5 +1,4 @@
 import numpy as np
-import utils
 import pathlib
 import matplotlib.pyplot as plt
 
@@ -13,7 +12,7 @@ if __name__ == '__main__':
         print(maps.shape)
         plt.clf()
         if log:
-            maps[0] = np.log(maps[0])
+            maps[0] = np.log10(maps[0])
         plt.pcolor(maps[0], cmap=cmap)
         plt.colorbar() 
     
