@@ -103,6 +103,59 @@ Each suite contains different sets, that indicate how the value of the labels of
 
 ## データセットの扱い方と表示
 `.npy`形式のファイルの中身は`(n, 256, 256)`のndarrayだった（少なくとも、`Mgas`, `HI`, `B`については）。  
-1次元目で１枚取り出して、対数を取って適当なカラーマップを用いてプロットすることで、論文のような画像が作れる。  
+1次元目で１枚取り出して、対数（底は10）を取って適当なカラーマップを用いてプロットすることで、論文のような画像が作れる。  
 ![Mgas data](dump/first_plot_Mgas.png)
 
+[公式実装サンプル(Colab)](https://colab.research.google.com/drive/1bT1OXxEPi2IaFs7sJn96M7scFtiKLygj?usp=sharing) があることがわかった。同じことをしていたため、問題ないことがわかった。
+
+
+このプログラムは独自実装である。
+```python
+import numpy as np
+import pathlib
+import matplotlib.pyplot as plt
+
+if __name__ == '__main__':
+    print('playground')
+    out_dir = pathlib.Path("dump/")
+    out_dir.mkdir(parents=True, exist_ok=True)    
+    
+    def load_map0_and_plot(fmaps, cmap=plt.cm.hot, log=True):
+        maps = np.load(fmaps)
+        print(maps.shape)
+        plt.clf()
+        if log:
+            maps[0] = np.log10(maps[0])
+        plt.pcolor(maps[0], cmap=cmap)
+        plt.colorbar() 
+    
+    fmaps = 'dataset/Maps_Mgas_IllustrisTNG_CV_z=0.00.npy'
+    load_map0_and_plot(fmaps=fmaps, cmap=plt.cm.hot)
+    plt.savefig(out_dir/"first_plot_Mgas_hot.png")
+    
+    fmaps = 'dataset/Maps_HI_IllustrisTNG_CV_z=0.00.npy'
+    load_map0_and_plot(fmaps=fmaps, cmap=plt.cm.Greens)
+    plt.savefig(out_dir/"first_plot_HI.png")
+    
+    fmaps = 'dataset/Maps_B_IllustrisTNG_CV_z=0.00.npy'
+    load_map0_and_plot(fmaps=fmaps, cmap=plt.cm.cividis)
+    plt.savefig(out_dir/"first_plot_B.png")
+```
+
+## プログラム構成について
+実験のためのプログラム以下のものからなる
+- model.py
+  - モデル定義
+- dataloader.py
+  - データローダーのコード
+- train.py
+  - 学習のためのループ
+- generate.py
+  - 生成用コード
+
+## 参考文献リスト
+- [PytorchでGANを実装してみた。](https://qiita.com/keiji_dl/items/45a5775a361151f9189d)をベースに実装すると素早く実装を終えられそう。
+- [CMD 公式実装サンプル(Colab)](https://colab.research.google.com/drive/1bT1OXxEPi2IaFs7sJn96M7scFtiKLygj?usp=sharing)
+- [CMD データセットの説明](https://camels-multifield-dataset.readthedocs.io/en/latest/data.html)
+- [【基礎】PyTorchのDataLoader/Datasetの使い方【MNIST】](https://qiita.com/tetsuro731/items/d64b9bbb8de6874b7064)
+- [PyTorch Datasets & DataLoaders](https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)
