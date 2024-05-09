@@ -27,6 +27,7 @@ class CAMELSMultifieldDataset(Dataset):
         else:
             raise IndexError("CAMELSMultifieldDataset index out of range")
         maps = [m[map_index] for m in self.maps[target_map_index]]
+        maps = np.array(maps, dtype=np.float64)
         maps = torch.tensor(maps, dtype=torch.float64, device=self.device)
         params = torch.tensor(self.params[target_map_index][[map_index//15]], device=self.device)
         return maps, params
