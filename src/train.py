@@ -1,49 +1,68 @@
 import torch
-import torch.optim as optim
-import Generator
-import Discriminator
+import model
+import dataset
+import tqdm
+import torchvision
 
-# デバイスの設定
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def train(dataloader, generator, discriminator, loss, optim_D, optim_G, epoch, device):
+    for batch in tqdm.tqdm(dataloader):
+        batch_size = batch.shape[0]
+        batch = batch.to(device)
+        
+        real_outputs = discriminator(batch)
+        real_label = torch.ones((batch_size, 1)).to(device)
+        
+        noise_batch = torch.rand(
+            (batch_size, 1, 2, 2), 
+            dtype=torch.float64, 
+            device=device)
+        fake_inputs = generator(noise_batch)
+        fake_outputs = discriminator(fake_inputs)
+        fake_label = torch.zeros((batch_size, 1)).to(device)
+        
+        outputs = torch.cat((real_outputs, fake_outputs), dim=0)
+        labels = torch.cat((real_label, fake_label), dim=0)
+        
+        loss_D = loss(outputs, labels)
+        
 
-# データの読み込み
-# ...
+def test():
+    # 画像を生成して、データセットとの分布をはかりたい。
+    # 識別器の知らない画像を入力し、正解率をはかりたい
+    pass
 
-# モデルの定義
-generator = Generator(z_dim, img_dim).to(device)
-discriminator = Discriminator(img_dim).to(device)
+def train_loop():
+     # デバイスの設定
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    data_paths = [
+        [
+            'dataset/Maps_Mgas_IllustrisTNG_CV_z=0.00.npy',
+            'dataset/Maps_HI_IllustrisTNG_CV_z=0.00.npy',
+            'dataset/Maps_B_IllustrisTNG_CV_z=0.00.npy',
+        ],
+    ]
+    params_paths = ['dataset/params_CV_IllustrisTNG.txt',]
+    
+    cmd = dataset.CAMELSMultifieldDataset(
+        data_paths=data_paths,
+        params_paths=params_paths,
+    )
+    dataloader = torch.utils.data.DataLoader(
+        cmd,
+        batch_size=10, 
+        shuffle=True, 
+    )
 
-# オプティマイザの定義
-g_optimizer = optim.Adam(generator.parameters())
-d_optimizer = optim.Adam(discriminator.parameters())
+    # モデルの定義
+    generator = model.Generator((1,2,2), (3, 256, 256)).to(device)
+    discriminator = model.Discriminator((3, 256, 256)).to(device)
+    
+    loss_D = torchvision.ops.focal_loss
+    
+    max_epoch = 10
+    for epoch in range(max_epoch):
+        train(dataloader, generator, discriminator, epoch)
 
-# 損失関数の定義
-BCE_loss = torch.nn.BCELoss()
-
-# 学習ループ
-for epoch in range(num_epochs):
-  for i, data in enumerate(dataloader):
-    # 訓練データとラベルの準備
-    real_img = data[0].to(device)
-    label = real_img.size(0) * torch.ones(1).to(device)
-
-    # 生成された画像の生成
-    z = torch.randn(label.size()).to(device)
-    fake_img = generator(z)
-
-    # Discriminatorの更新
-    d_optimizer.zero_grad()
-    real_output = discriminator(real_img)
-    fake_output = discriminator(fake_img.detach())
-    real_loss = BCE_loss(real_output, label)
-    fake_loss = BCE_loss(fake_output, 1 - label)
-    d_loss = real_loss + fake_loss
-    d_loss.backward()
-    d_optimizer.step()
-
-    # Generatorの更新
-    g_optimizer.zero_grad()
-    fake_output = discriminator(fake_img)
-    g_loss = BCE_loss(fake_output, label)
-    g_loss.backward()
-    g_optimizer.step()
+if __name__ == '__main__':
+   train_loop()

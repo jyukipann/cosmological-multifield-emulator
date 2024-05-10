@@ -1,11 +1,12 @@
 import torch.nn as nn
 from torchvision.models import vit_b_16, ViT_B_16_Weights
+import torchvision
 
 class Generator(nn.Module):
     def __init__(self, input_size:tuple, output_size:tuple)->None:
         super().__init__()
-        self.input_size = input_size # expected (b, 1, 2, 2)
-        self.output_size = output_size # expected (b, 3, 256, 256)
+        self.input_size = input_size # expected (1, 2, 2)
+        self.output_size = output_size # expected (3, 256, 256)
         self.upsampling_layers = [
             nn.ConvTranspose2d(1, 3, 2, stride=2, dtype=torch.float64),
             nn.ConvTranspose2d(3, 15, 2, stride=2, dtype=torch.float64),
@@ -26,14 +27,19 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     def __init__(self, input_size:tuple)->None:
         super().__init__()
-        self.input_size = input_size
+        self.input_size = input_size # (3, 256, 256)
         self.vit = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
         self.vit.heads.head = nn.Linear(
             in_features=768, out_features=1, bias=True)
+        self.sigmoid = nn.Sigmoid()
+        # 形状合わせて無理やり入力
+        self.resize = torchvision.transforms.Resize((224,224))
         
-
     def forward(self, maps):
-        x = self.vit(maps)
+        x = maps
+        x = self.resize(x).to(torch.float)
+        x = self.vit(x)
+        x = self.sigmoid(x)
         return x
 
 
