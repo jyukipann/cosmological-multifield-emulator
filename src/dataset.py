@@ -51,5 +51,11 @@ if __name__ == '__main__':
     print(maps.shape)
     print(params.shape)
     
+    dataloader = torch.utils.data.DataLoader(
+        cmd,
+        batch_size=2, 
+        shuffle=True, 
+    )
+    
     
     
