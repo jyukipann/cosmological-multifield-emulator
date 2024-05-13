@@ -1,61 +1,56 @@
 import torch
 import numpy as np
 from torch.utils.data import Dataset
+from typing import Tuple
+import utils
+import pathlib
 
 class CAMELSMultifieldDataset(Dataset):
-    def __init__(self, data_paths:list, params_paths:list, device:torch.device) -> None:
+    def __init__(
+            self, 
+            dir_path: pathlib.Path | str, 
+            ids:list, 
+            device:torch.device) -> None:
+        
         super().__init__()
-        self.maps = [[np.load(p) for p in paths] for paths in data_paths]
-        self.params = [np.loadtxt(p) for p in params_paths]
-        self.map_lengths = [m[0].shape[0] for m in self.maps]
+        self.ids = ids
         self.device = device
+        self.dir_path = pathlib.Path(dir_path)
+        self.prefixs = ('Mgas', 'HI', 'B')
         
     def __len__(self) -> int:
-        return sum(self.map_lengths)
+        return len(self.ids)
     
-    def __getitem__(self, index) -> None:
-        target_map_index = 0
-        length_sum = 0
-        map_index = 0
-        for i, length in enumerate(self.map_lengths):
-            if index < length_sum + length:
-                target_map_index = i
-                map_index = index - length_sum
-                break
-            
-            length_sum += length
-        else:
-            raise IndexError("CAMELSMultifieldDataset index out of range")
-        maps = [m[map_index] for m in self.maps[target_map_index]]
-        maps = np.array(maps, dtype=np.float64)
-        maps = torch.tensor(maps, dtype=torch.float64, device=self.device)
-        params = torch.tensor(self.params[target_map_index][[map_index//15]], device=self.device)
+    def __getitem__(self, index) -> Tuple[torch.tensor, torch.tensor]:
+        data = utils.load_from_pickle(self.dir_path/f'{index}.pkl')
+        maps = [
+            torch.tensor(data[prefix]).unsqueeze(0) for prefix in self.prefixs]
+        maps = torch.cat(maps, 0).to(self.device)
+        params = torch.tensor([
+            data['omega_m'], 
+            data['sigma_8'],
+            data['A_SN1'],
+            data['A_SN2'],
+            data['A_AGN1'],
+            data['A_AGN2'],
+        ], device=self.device)
         return maps, params
 
-
 if __name__ == '__main__':
-    data_paths = [
-        [
-            'dataset/Maps_Mgas_IllustrisTNG_CV_z=0.00.npy',
-            'dataset/Maps_HI_IllustrisTNG_CV_z=0.00.npy',
-            'dataset/Maps_B_IllustrisTNG_CV_z=0.00.npy',
-        ],
-    ]
-    params_paths = [
-        'dataset/params_CV_IllustrisTNG.txt',
-    ]
+    dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
+    train_index_set = list(range(15000))[:10000]
     device = torch.device('cuda')
-    cmd = CAMELSMultifieldDataset(data_paths, params_paths, device)
+    cmd = CAMELSMultifieldDataset(dir_path, train_index_set, device)
     print(len(cmd))
     maps , params = cmd[0]
     print(maps.shape)
     print(params.shape)
     
-    dataloader = torch.utils.data.DataLoader(
-        cmd,
-        batch_size=2, 
-        shuffle=True, 
-    )
+    # dataloader = torch.utils.data.DataLoader(
+    #     cmd,
+    #     batch_size=2, 
+    #     shuffle=True, 
+    # )
     
     
     

@@ -3,10 +3,10 @@ import numpy as np
 from typing import List
 import pickle
 import tqdm
-import matplotlib
 import matplotlib.pyplot as plt
 import io
-import cv2
+import torchvision
+import torch
 
 
 def save_as_pickle(path:pathlib.Path, obj:any)->None:
@@ -74,8 +74,8 @@ def plot_maps(data:dict, out_dir:pathlib.Path | str | None = None)->dict:
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
         enc = np.frombuffer(buf.getvalue(), dtype=np.uint8)
-        dst = cv2.imdecode(enc, 1)
-        maps[prefix] = dst
+        dst = torchvision.io.decode_image(torch.tensor(enc).to(torch.uint8))
+        maps[prefix] = dst[:-1]
     return maps
     
         
@@ -96,6 +96,10 @@ if __name__ == '__main__':
     data_id_0 = load_from_pickle(pathlib.Path(out_dir) / f'0.pkl')
     print(data_id_0)
     images = plot_maps(data_id_0, out_dir)
+    print(images['Mgas'].shape)
+    
+    torchvision.io.write_png(images['Mgas'], 'dump/0_Mgas.png')
+    
     
     
     

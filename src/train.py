@@ -76,24 +76,17 @@ def test():
 def train_loop():
      # デバイスの設定
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    data_paths = [
-        [
-            'dataset/Maps_Mgas_IllustrisTNG_CV_z=0.00.npy',
-            'dataset/Maps_HI_IllustrisTNG_CV_z=0.00.npy',
-            'dataset/Maps_B_IllustrisTNG_CV_z=0.00.npy',
-        ],
-    ]
-    params_paths = ['dataset/params_CV_IllustrisTNG.txt',]
+    dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
+    train_index_set = list(range(15000))[:10000]
     
     cmd = dataset.CAMELSMultifieldDataset(
-        data_paths=data_paths,
-        params_paths=params_paths,
+        dir_path=dir_path,
+        ids=train_index_set,
         device=device,
     )
     dataloader = torch.utils.data.DataLoader(
         cmd,
-        batch_size=41, 
+        batch_size=30, 
         shuffle=True, 
     )
 
@@ -110,7 +103,7 @@ def train_loop():
     
     output_dir = 'experiment_results'
     
-    max_epoch = 100
+    max_epoch = 2
     
     output_dir = pathlib.Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
