@@ -8,7 +8,6 @@ docker-compose up
 ```
 ```bash
 pip install matplotlib, tensorboard
-
 ```
 
 ## データセットのダウンロード
