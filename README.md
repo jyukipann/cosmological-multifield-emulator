@@ -105,6 +105,25 @@ Each suite contains different sets, that indicate how the value of the labels of
 ### 各フィールドのパラメータ
 `.txt`にある。
 
+### 実験に用いたデータ一覧
+| Path                                         | Shape             |
+| -------------------------------------------- | ----------------- |
+| dataset/Maps_B_IllustrisTNG_1P_z=0.00.npy    | (990, 256, 256)   |
+| dataset/Maps_B_IllustrisTNG_BE_z=0.00.npy    | (405, 256, 256)   |
+| dataset/Maps_B_IllustrisTNG_CV_z=0.00.npy    | (405, 256, 256)   |
+| dataset/Maps_B_IllustrisTNG_EX_z=0.00.npy    | (60, 256, 256)    |
+| dataset/Maps_B_IllustrisTNG_LH_z=0.00.npy    | (15000, 256, 256) |
+| dataset/Maps_HI_IllustrisTNG_1P_z=0.00.npy   | (990, 256, 256)   |
+| dataset/Maps_HI_IllustrisTNG_BE_z=0.00.npy   | (405, 256, 256)   |
+| dataset/Maps_HI_IllustrisTNG_CV_z=0.00.npy   | (405, 256, 256)   |
+| dataset/Maps_HI_IllustrisTNG_EX_z=0.00.npy   | (60, 256, 256)    |
+| dataset/Maps_HI_IllustrisTNG_LH_z=0.00.npy   | (15000, 256, 256) |
+| dataset/Maps_Mgas_IllustrisTNG_1P_z=0.00.npy | (990, 256, 256)   |
+| dataset/Maps_Mgas_IllustrisTNG_BE_z=0.00.npy | (405, 256, 256)   |
+| dataset/Maps_Mgas_IllustrisTNG_CV_z=0.00.npy | (405, 256, 256)   |
+| dataset/Maps_Mgas_IllustrisTNG_EX_z=0.00.npy | (60, 256, 256)    |
+| dataset/Maps_Mgas_IllustrisTNG_LH_z=0.00.npy | (15000, 256, 256) |
+
 ## データセットの扱い方と表示
 `.npy`形式のファイルの中身は`(n, 256, 256)`のndarrayだった（少なくとも、`Mgas`, `HI`, `B`については）。  
 1次元目で１枚取り出して、対数（底は10）を取って適当なカラーマップを用いてプロットすることで、論文のような画像が作れる。  
