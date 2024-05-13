@@ -4,10 +4,11 @@
 
 ## 環境構築
 ```bash
-docker-compose up
+docker-compose up -d
 ```
+足りないパッケージは自分でいれる（多く or 重く なってきたらビルド時に含めることも検討）。
 ```bash
-pip install matplotlib, tensorboard
+pip install matplotlib tensorboard tqdm
 ```
 
 ## データセットのダウンロード

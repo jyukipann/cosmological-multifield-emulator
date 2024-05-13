@@ -37,6 +37,5 @@ def map_counter():
 if __name__ == '__main__':
     print('playground')
 
-    display_maps_test()
-    
+    # display_maps_test()
     # map_counter()
