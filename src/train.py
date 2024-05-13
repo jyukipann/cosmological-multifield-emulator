@@ -5,15 +5,19 @@ import tqdm
 import torchvision
 import pathlib
 import datetime
+from torch.utils.tensorboard import SummaryWriter
 
 def train(
         dataloader, 
         generator, discriminator, 
         loss_G, loss_D, 
         optimizer_G, optimizer_D, 
-        epoch, device):
+        epoch, device, summary_writer:SummaryWriter=None):
     
-    for batch, params in tqdm.tqdm(dataloader, desc=f"epoch {epoch}"):
+    max_step = len(dataloader)
+    loss_sum_D = 0
+    loss_sum_G = 0
+    for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
         batch = batch.to(device)
         
@@ -52,6 +56,16 @@ def train(
         loss_generator = loss_G(fake_outputs, fake_label, reduction="sum")
         loss_generator.backward()
         optimizer_G.step()
+        
+        loss_sum_D += loss_discriminator
+        loss_sum_G += loss_generator
+        
+        if summary_writer is not None:
+            summary_writer.add_scalar(
+                "Loss/train/Loss_G", loss_generator, (epoch-1)+(i/max_step))
+            summary_writer.add_scalar(
+                "Loss/train/Loss_D", loss_discriminator, (epoch-1)+(i/max_step))
+    print(f"{epoch=} : loss_generator={loss_sum_G/max_step}, loss_discriminator={loss_sum_D/max_step}")
 
 
 def test():
@@ -79,7 +93,7 @@ def train_loop():
     )
     dataloader = torch.utils.data.DataLoader(
         cmd,
-        batch_size=10, 
+        batch_size=41, 
         shuffle=True, 
     )
 
@@ -96,18 +110,23 @@ def train_loop():
     
     output_dir = 'experiment_results'
     
-    max_epoch = 2
-    for epoch in range(max_epoch):
-        train(
-            dataloader, 
-            generator, discriminator, 
-            loss_G, loss_D, 
-            optimizer_G, optimizer_D, 
-            epoch, device)
-        
+    max_epoch = 100
+    
     output_dir = pathlib.Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    time_stamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    time_stamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S') 
+    
+    with SummaryWriter(f'logs/{time_stamp}') as writer:
+        for epoch in range(max_epoch):
+            train(
+                dataloader, 
+                generator, discriminator, 
+                loss_G, loss_D, 
+                optimizer_G, optimizer_D, 
+                epoch, device)
+            
+        
+
     # save models
     torch.save(generator, str(output_dir/f'generator_{time_stamp}.pth'))
     torch.save(discriminator, str(output_dir/f'discriminator_{time_stamp}.pth'))

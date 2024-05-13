@@ -6,6 +6,10 @@
 ```bash
 docker-compose up
 ```
+```bash
+pip install matplotlib, tensorboard
+
+```
 
 ## データセットのダウンロード
 powershellではwgetが標準でなかったため、wsl経由のbashでwgetした。
