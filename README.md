@@ -176,9 +176,14 @@ if __name__ == '__main__':
 - generate.py
   - 生成用コード
 
+## モデルについて
+
+
 ## 参考文献リスト
 - [PytorchでGANを実装してみた。](https://qiita.com/keiji_dl/items/45a5775a361151f9189d)をベースに実装すると素早く実装を終えられそう。
 - [CMD 公式実装サンプル(Colab)](https://colab.research.google.com/drive/1bT1OXxEPi2IaFs7sJn96M7scFtiKLygj?usp=sharing)
 - [CMD データセットの説明](https://camels-multifield-dataset.readthedocs.io/en/latest/data.html)
 - [【基礎】PyTorchのDataLoader/Datasetの使い方【MNIST】](https://qiita.com/tetsuro731/items/d64b9bbb8de6874b7064)
 - [PyTorch Datasets & DataLoaders](https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)
+- [[画像]Skip-layer excitationの構造について](https://www.researchgate.net/figure/The-structure-of-the-skip-layer-excitation-module-and-the-Generator-Yellow-boxes_fig3_348486394)
+  - [[GitHub]公式実装 FastGAN-pytorch](https://github.com/odegeasslbc/FastGAN-pytorch/tree/main)
