@@ -14,11 +14,13 @@ class Generator(nn.Module):
         
         max_channels = 1024
         self.init = Seq(
-            nn.ConvTranspose2d(self.input_size[1], max_channels*2),
-            nn.BatchNorm2d(max_channels*2),
+            nn.ConvTranspose2d(
+                self.input_size[1], max_channels, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(max_channels),
             nn.GLU(),
         )
-        channels = [max_channels // 2**i for i in [1, 2, 3, 4, 5, 6, 7]]
+        channels = [max_channels // 2**i for i in [0, 1, 2, 3, 4, 5, 6, 7]]
+        print(channels)
         self.upconv8 = Up(channels[0], channels[1])
         self.upconv16 = Up(channels[1], channels[2])
         self.upconv32 = Up(channels[2], channels[3])
@@ -30,6 +32,9 @@ class Generator(nn.Module):
         self.se128 = SkipLayerExcitation(channels[1], channels[5], channels[5])
         self.se256 = SkipLayerExcitation(channels[2], channels[6], channels[6])
         
+        self.arrange_channel128 = nn.Conv2d(channels[5], 3, 3, 1, 1, bias=True)
+        self.arrange_channel256 = nn.Conv2d(channels[6], 3, 3, 1, 1, bias=True)
+        
         
     def forward(self, x)->Tuple[tensor, tensor]:
         feat4 = self.init(x)
@@ -40,7 +45,10 @@ class Generator(nn.Module):
         feat64 = self.se64(feat4, self.upconv64(feat32))
         feat128 = self.se128(feat8, self.upconv128(feat64))
         feat256 = self.se256(feat16, self.upconv256(feat128))
-        return feat256, feat128
+        
+        low_res = self.arrange_channel128(feat128)
+        high_res = self.arrange_channel256(feat256)
+        return high_res, low_res
 
 class NoiseInjection(nn.Module):
     def __init__(self):
@@ -59,8 +67,8 @@ def Up(
     block  = []
     for _ in range(times):
         block += [
-            nn.Conv2d(in_channels, out_channels*2, 3, 1, 1, bias=False),
-            nn.BatchNorm2d(out_channels*2),
+            nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False),
+            nn.BatchNorm2d(out_channels),
         ]
         if noise_injection:
             block.append(NoiseInjection())
@@ -107,15 +115,28 @@ class Discriminator(nn.Module):
 
 if __name__ == '__main__':
     import torch
-    g = Generator((1, 4), (1, 3, 256, 256))
-    x = torch.rand((1, 1, 2, 2), dtype=torch.float64)
-    print(g.parameters())
-    # print(x.shape)
-    x = g(x)
-    # print(x.shape)
+    batch_size = 1
+    input_noise_shape = (batch_size, 256, 1, 1)
+    output_map_shape = (batch_size, 3, 256, 256)
+    g = Generator(input_noise_shape, output_map_shape)
+    noise = torch.rand(input_noise_shape, dtype=torch.float32)
     
-    d = Discriminator((1,3,256,256))
-    # print(d.vit)
+    # GLU()がどういう処理か確認する。
+    # glu = nn.GLU()
+    # x = torch.rand((1,30,10,10))
+    # x = torch.transpose(x, 1, -1)
+    # x = glu(x)
+    # x = torch.transpose(x, 1, -1)
+    # print(x.shape)
+    # transposeをして、channelの場所を最高次元にしないとだめ。そしてもとに戻す。
     
-    x = d(x)
-    print(x.shape)
+    # print(g.parameters())
+    # print(x.shape)
+    high_res, low_res = g(noise)
+    print(f"{high_res.size()=} {low_res.size()=}")
+    
+    # d = Discriminator((1,3,256,256))
+    # # print(d.vit)
+    
+    # x = d(x)
+    # print(x.shape)
