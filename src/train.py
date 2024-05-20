@@ -20,7 +20,9 @@ def train(
     for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
         batch = batch.to(device)
-        
+        # print(batch.shape)
+        noise_shape = (batch_size, 256, 1, 1)
+
         generator = generator.to(device).train()
         discriminator = discriminator.to(device).train()
         
@@ -29,10 +31,8 @@ def train(
         real_label = torch.ones((batch_size, 1)).to(device)
         
         noise_batch = torch.rand(
-            (batch_size, 1, 2, 2), 
-            dtype=torch.float64, 
-            device=device)
-        fake_inputs = generator(noise_batch)
+            noise_shape, dtype=torch.double, device=device)
+        fake_inputs, low_res_fake_inputs = generator(noise_batch)
         fake_outputs = discriminator(fake_inputs)
         fake_label = torch.zeros((batch_size, 1), device=device)
         
@@ -46,10 +46,8 @@ def train(
         
         # Generator
         noise_batch = torch.rand(
-            (batch_size, 1, 2, 2), 
-            dtype=torch.float64, 
-            device=device)
-        fake_inputs = generator(noise_batch)
+            noise_shape, dtype=torch.double, device=device)
+        fake_inputs, low_res_fake_inputs = generator(noise_batch)
         fake_outputs = discriminator(fake_inputs)
         fake_label = torch.ones((batch_size, 1), device=device)
         optimizer_G.zero_grad()
@@ -78,7 +76,7 @@ def train_loop():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
     train_index_set = list(range(15000))[:10000]
-    
+    batch_size = 30
     cmd = dataset.CAMELSMultifieldDataset(
         dir_path=dir_path,
         ids=train_index_set,
@@ -86,12 +84,12 @@ def train_loop():
     )
     dataloader = torch.utils.data.DataLoader(
         cmd,
-        batch_size=30, 
+        batch_size=batch_size, 
         shuffle=True, 
     )
 
     # モデルの定義
-    generator = model.Generator((1,2,2), (3, 256, 256))
+    generator = model.Generator((batch_size, 256, 1, 1), (3, 256, 256)).double()
     discriminator = model.Discriminator((3, 256, 256))
     loss_D = torchvision.ops.focal_loss.sigmoid_focal_loss
     loss_G = torchvision.ops.focal_loss.sigmoid_focal_loss
