@@ -48,6 +48,8 @@ class Generator(nn.Module):
         
         low_res = self.arrange_channel128(feat128)
         high_res = self.arrange_channel256(feat256)
+        low_res = torch.abs(low_res)
+        high_res = torch.abs(high_res)
         return high_res, low_res
 
 class NoiseInjection(nn.Module):
@@ -118,22 +120,22 @@ if __name__ == '__main__':
     batch_size = 1
     input_noise_shape = (batch_size, 256, 1, 1)
     output_map_shape = (batch_size, 3, 256, 256)
-    g = Generator(input_noise_shape, output_map_shape)
+    g = Generator(input_noise_shape, output_map_shape).eval()
     noise = torch.rand(input_noise_shape, dtype=torch.float32)
-    
-    # GLU()がどういう処理か確認する。
-    # glu = nn.GLU(1)
-    # x = torch.rand((1,30,10,10))
-    # x = torch.transpose(x, 1, -1)
-    # x = glu(x)
-    # x = torch.transpose(x, 1, -1)
-    # print(x.shape)
-    # transposeをして、channelの場所を最高次元にしないとだめ。そしてもとに戻す。
     
     # print(g.parameters())
     # print(x.shape)
     high_res, low_res = g(noise)
     print(f"{high_res.size()=} {low_res.size()=}")
+
+    import utils, datetime
+    now = datetime.datetime.now()
+    utils.plot_map(
+        high_res[0,0].detach().numpy(), 
+        utils.PREFIX_CMAP_DICT['Mgas'], 
+        f'dump/Mgas_{now}.png',
+    )
+
     
     # d = Discriminator((1,3,256,256))
     # # print(d.vit)

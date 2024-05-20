@@ -7,7 +7,13 @@ import matplotlib.pyplot as plt
 import io
 import torchvision
 import torch
+from torch import tensor
 
+PREFIX_CMAP_DICT = {
+    'Mgas':plt.cm.hot,
+    'HI':plt.cm.Greens,
+    'B':plt.cm.cividis,
+}
 
 def save_as_pickle(path:pathlib.Path, obj:any)->None:
     with open(path, 'wb') as f:
@@ -51,34 +57,31 @@ def extract_map(
         save_as_pickle(out_dir/f'{i}.pkl', data)
         
 def plot_maps(data:dict, out_dir:pathlib.Path | str | None = None)->dict:
-    prefix_cmap_set = (
-        ('Mgas', plt.cm.hot), 
-        ('HI', plt.cm.Greens), 
-        ('B', plt.cm.cividis),
-    )
-    
     if out_dir is not None:
         out_dir = pathlib.Path(out_dir)
     maps = dict(id=data['id'])
-    for prefix, cmap in prefix_cmap_set:
+    for prefix, cmap in PREFIX_CMAP_DICT.items():
         map_data = data[prefix]
-        h, w = map_data.shape
-        plt.gca().clear()
-        plt.figure(figsize=(w/100, h/100))
-        plt.pcolor(np.log10(map_data), cmap=cmap)
-        plt.axis('tight')
-        plt.axis('off')
-        plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-        if out_dir is not None:
-            plt.savefig(out_dir/f'{data["id"]}_{prefix}.png')
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        enc = np.frombuffer(buf.getvalue(), dtype=np.uint8)
-        dst = torchvision.io.decode_image(torch.tensor(enc).to(torch.uint8))
-        maps[prefix] = dst[:-1]
+        maps[prefix] = plot_map(
+            map_data, cmap,
+            None if out_dir is None else out_dir/f'{data["id"]}_{prefix}.png')
     return maps
     
-        
+def plot_map(map_data:tensor, cmap:plt.cm, out_path=None)->tensor:
+    h, w = map_data.shape
+    plt.gca().clear()
+    plt.figure(figsize=(w/100, h/100))
+    plt.pcolor(np.log10(map_data), cmap=cmap)
+    plt.axis('tight')
+    plt.axis('off')
+    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    if out_path is not None:
+        plt.savefig(out_path)
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    enc = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+    dst = torchvision.io.decode_image(tensor(enc).to(torch.uint8))
+    return dst[:-1]
         
 if __name__ == '__main__':
     # set_value = 'EX'
