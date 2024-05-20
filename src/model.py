@@ -15,9 +15,9 @@ class Generator(nn.Module):
         max_channels = 1024
         self.init = Seq(
             nn.ConvTranspose2d(
-                self.input_size[1], max_channels, 4, 1, 0, bias=False),
-            nn.BatchNorm2d(max_channels),
-            nn.GLU(),
+                self.input_size[1], max_channels*2, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(max_channels*2),
+            nn.GLU(1),
         )
         channels = [max_channels // 2**i for i in [0, 1, 2, 3, 4, 5, 6, 7]]
         print(channels)
@@ -65,14 +65,14 @@ def Up(
         in_channels:int, out_channels:int, 
         times:int=1, noise_injection:bool=False,)->nn.Module:
     block  = []
-    for _ in range(times):
+    for i in range(times):
         block += [
-            nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False),
-            nn.BatchNorm2d(out_channels),
+            nn.Conv2d(in_channels if i == 0 else out_channels, out_channels*2, 3, 1, 1, bias=False),
+            nn.BatchNorm2d(out_channels*2),
         ]
         if noise_injection:
             block.append(NoiseInjection())
-        block.append(nn.GLU())
+        block.append(nn.GLU(1))
     return Seq(nn.Upsample(scale_factor=2, mode='nearest'), *block)
 
 class SkipLayerExcitation(nn.Module):
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     noise = torch.rand(input_noise_shape, dtype=torch.float32)
     
     # GLU()がどういう処理か確認する。
-    # glu = nn.GLU()
+    # glu = nn.GLU(1)
     # x = torch.rand((1,30,10,10))
     # x = torch.transpose(x, 1, -1)
     # x = glu(x)
