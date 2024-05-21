@@ -80,12 +80,12 @@ def train_loop():
     cmd = dataset.CAMELSMultifieldDataset(
         dir_path=dir_path,
         ids=train_index_set,
-        device=device,
     )
     dataloader = torch.utils.data.DataLoader(
         cmd,
         batch_size=batch_size, 
-        shuffle=True, 
+        shuffle=True,
+        num_workers=4
     )
 
     # モデルの定義
