@@ -1,6 +1,10 @@
+import utils
 import numpy as np
 import pathlib
 import matplotlib.pyplot as plt
+import torch
+from torch.utils.tensorboard import SummaryWriter
+import model
 
 def display_maps_test():
     out_dir = pathlib.Path("dump/")
@@ -33,9 +37,31 @@ def map_counter():
     
     for path in map_paths:
         print(f"{str(path)}, {np.load(path).shape}")
-    
+
+def tensorboard_test():
+    dir = 'dump/tb_test/'
+    writer = SummaryWriter(log_dir=dir,)
+    g = model.Generator((1, 256, 1, 1), (1, 3, 256, 256))
+    for i in range(100):
+        writer.add_scalar('accuracy', i/100, i)
+        g_img, _ = g(torch.rand((1,256,1,1)))
+        mgas,hi,b = g_img[0].detach().numpy()
+        mgas = utils.plot_map(mgas, utils.PREFIX_CMAP_DICT['Mgas'])
+        hi = utils.plot_map(hi, utils.PREFIX_CMAP_DICT['HI'])
+        b = utils.plot_map(b, utils.PREFIX_CMAP_DICT['B'])
+        mgas_hi_b = torch.cat([mgas, hi, b], dim=2)
+        # print(mgas_hi_b.size())
+        # exit()
+        writer.add_image("generated_image/mgas_hi_b", mgas_hi_b, i)
+        writer.add_image("generated_image/mgas", mgas, i)
+        writer.add_image("generated_image/hi", hi, i)
+        writer.add_image("generated_image/b", b, i)
+
+
+
+
 if __name__ == '__main__':
     print('playground')
-
+    tensorboard_test()
     # display_maps_test()
     # map_counter()
