@@ -81,6 +81,8 @@ def plot_map(map_data:tensor, cmap:plt.cm, out_path=None)->tensor:
     plt.savefig(buf, format='png')
     enc = np.frombuffer(buf.getvalue(), dtype=np.uint8)
     dst = torchvision.io.decode_image(tensor(enc).to(torch.uint8))
+    plt.clf()
+    plt.close()
     return dst[:-1]
         
 if __name__ == '__main__':
