@@ -3,6 +3,7 @@ services:
   python:
     # image: pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel
     build: docker_build
+    shm_size: '2gb'
     volumes:
       - ./:/workspace
     tty: true
