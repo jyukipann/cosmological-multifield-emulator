@@ -9,12 +9,10 @@ class CAMELSMultifieldDataset(Dataset):
     def __init__(
             self, 
             dir_path: pathlib.Path | str, 
-            ids:list, 
-            device:torch.device) -> None:
+            ids:list,) -> None:
         
         super().__init__()
         self.ids = ids
-        self.device = device
         self.dir_path = pathlib.Path(dir_path)
         self.prefixs = ('Mgas', 'HI', 'B')
         
@@ -25,7 +23,7 @@ class CAMELSMultifieldDataset(Dataset):
         data = utils.load_from_pickle(self.dir_path/f'{index}.pkl')
         maps = [
             torch.tensor(data[prefix]).unsqueeze(0) for prefix in self.prefixs]
-        maps = torch.cat(maps, 0).to(self.device)
+        maps = torch.cat(maps, 0)
         params = torch.tensor([
             data['omega_m'], 
             data['sigma_8'],
@@ -33,14 +31,13 @@ class CAMELSMultifieldDataset(Dataset):
             data['A_SN2'],
             data['A_AGN1'],
             data['A_AGN2'],
-        ], device=self.device)
+        ])
         return maps, params
 
 if __name__ == '__main__':
     dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
     train_index_set = list(range(15000))[:10000]
-    device = torch.device('cuda')
-    cmd = CAMELSMultifieldDataset(dir_path, train_index_set, device)
+    cmd = CAMELSMultifieldDataset(dir_path, train_index_set)
     print(len(cmd))
     maps , params = cmd[0]
     print(maps.shape)
