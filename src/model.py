@@ -20,7 +20,7 @@ class Generator(nn.Module):
             nn.GLU(1),
         )
         channels = [max_channels // 2**i for i in [0, 1, 2, 3, 4, 5, 6, 7]]
-        print(channels)
+
         self.upconv8 = Up(channels[0], channels[1])
         self.upconv16 = Up(channels[1], channels[2])
         self.upconv32 = Up(channels[2], channels[3])
