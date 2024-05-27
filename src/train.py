@@ -75,7 +75,10 @@ def train_loop():
      # デバイスの設定
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
-    train_index_set = list(range(15000))[:10000]
+    index_set = list(range(15000))
+    train_index_set = index_set[:10000]
+    val_index_set = index_set[10000:11500]
+    test_index_set = index_set[11500:15000]
     batch_size = 30
     cmd = dataset.CAMELSMultifieldDataset(
         dir_path=dir_path,
@@ -115,8 +118,7 @@ def train_loop():
                 loss_G, loss_D, 
                 optimizer_G, optimizer_D, 
                 epoch, device)
-            
-        
+
 
     # save models
     torch.save(generator, str(output_dir/f'generator_{time_stamp}.pth'))
