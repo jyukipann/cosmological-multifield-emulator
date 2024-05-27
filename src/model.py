@@ -100,41 +100,30 @@ class Discriminator(nn.Module):
     def __init__(self, input_size:tuple)->None:
         super().__init__()
         self.input_size = input_size # (3, 256, 256)
-        # self.vit = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
-        # self.vit.heads.head = nn.Linear(
-        #     in_features=768, out_features=1, bias=True)
-        # self.sigmoid = nn.Sigmoid()
-        # # 形状合わせて無理やり入力
-        # self.resize = torchvision.transforms.Resize((224,224))
-
-
 
         # max_channels = 1024
         channels = [128, 64, 32, 16, 8, 1]
-        # channels = [max_channels // 2**i for i in [0, 1, 2, 3, 4, 5, 6, 7]]
 
+        self.leakyrelu = nn.LeakyReLU(0.2)
+
+        self.downconv128 = nn.Conv2d(self.input_size[0], channels[0], 3, 2, 1)
+        self.downconv64 = nn.Conv2d(channels[0], channels[1], 3, 2, 1)
         
+        self.downconv32 = nn.Conv2d(channels[1], channels[2], 3, 2, 1)
+        self.se32 = SkipLayerExcitation(self.input_size[0], channels[2], channels[2])
+
+        self.downconv16 = nn.Conv2d(channels[2], channels[3], 3, 2, 1)
+        self.se16 = SkipLayerExcitation(channels[0], channels[3], channels[3])
+        
+        self.downconv8 = nn.Conv2d(channels[3], channels[4], 3, 2, 1)
+        self.se8 = SkipLayerExcitation(channels[1], channels[4], channels[4])
+
         self.downconv8_5 = Seq(
             nn.Conv2d(channels[4], channels[5], 3, 1, 1),
             nn.Conv2d(channels[5], channels[5], 4, 1, 0),
             nn.Conv2d(channels[5], 1, 1, 1, 0),
             nn.Flatten()
         )
-
-        self.leakyrelu = nn.LeakyReLU(0.2)
-
-        self.downconv128 = nn.Conv2d(self.input_size[0], channels[0], 3, 2, 1)
-        self.se32 = SkipLayerExcitation(self.input_size[0], channels[2], channels[2])
-
-        self.downconv64 = nn.Conv2d(channels[0], channels[1], 3, 2, 1)
-        self.se16 = SkipLayerExcitation(channels[0], channels[3], channels[3])
-
-        self.downconv32 = nn.Conv2d(channels[1], channels[2], 3, 2, 1)
-        self.se8 = SkipLayerExcitation(channels[1], channels[4], channels[4])
-
-        self.downconv16 = nn.Conv2d(channels[2], channels[3], 3, 2, 1)
-        self.downconv8 = nn.Conv2d(channels[3], channels[4], 3, 2, 1)
-
 
         self.convolution_low = Seq(
             nn.Conv2d(self.input_size[0], channels[1], 3, 2, 1),
@@ -161,9 +150,7 @@ class Discriminator(nn.Module):
             
         
     def forward(self, high_res, low_res):
-        x = high_res
-        
-        feat128 = self.downconv128(x)
+        feat128 = self.downconv128(high_res)
         feat128 = self.leakyrelu(feat128)
 
         feat64 = self.downconv64(feat128)
@@ -171,28 +158,21 @@ class Discriminator(nn.Module):
 
         feat32 = self.downconv32(feat64)
         feat32 = self.leakyrelu(feat32)
-
         feat32 = self.se32(x, feat32)
 
         feat16 = self.downconv16(feat32)
         feat16 = self.leakyrelu(feat16)
-
         feat16 = self.se32(feat128, feat16)
 
         feat8 = self.downconv8(feat16)
         feat8 = self.leakyrelu(feat8)
-
         feat8 = self.se32(feat64, feat8)
 
-        feat5 = self.downconv8_5(feat8)
+        feat5_high_res = self.downconv8_5(feat8)
 
+        feat5_low_res = self.convolution_low(low_res)
 
-
-        y = low_res
-        y = self.convolution_low(y)
-
-        x = torch.cat((feat5, y), -1)
-        
+        x = torch.cat((feat5_high_res, feat5_low_res), -1)        
         x = self.linear(x)
 
         return x
@@ -221,7 +201,7 @@ if __name__ == '__main__':
 
     
     d = Discriminator((3,256,256))
-    # print(d.vit)
+    print(d)
     
     x = d(high_res, low_res)
     print(x.shape)
