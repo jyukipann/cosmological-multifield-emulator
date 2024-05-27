@@ -1,4 +1,5 @@
 import torch
+import torchvision.transforms.functional
 import model
 import dataset
 import tqdm
@@ -20,6 +21,7 @@ def train(
     for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
         batch = batch.to(device)
+        batch_low_res =  torchvision.transforms.functional.resize(batch, (128, 128))
         # print(batch.shape)
         noise_shape = (batch_size, 256, 1, 1)
 
@@ -27,13 +29,13 @@ def train(
         discriminator = discriminator.to(device).train()
         
         # Discriminator
-        real_outputs = discriminator(batch)
+        real_outputs = discriminator(batch, batch_low_res)
         real_label = torch.ones((batch_size, 1)).to(device)
         
         noise_batch = torch.rand(
-            noise_shape, dtype=torch.double, device=device)
+            noise_shape, dtype=torch.float, device=device)
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
-        fake_outputs = discriminator(fake_inputs)
+        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
         fake_label = torch.zeros((batch_size, 1), device=device)
         
         outputs = torch.cat((real_outputs, fake_outputs), dim=0)
@@ -46,9 +48,9 @@ def train(
         
         # Generator
         noise_batch = torch.rand(
-            noise_shape, dtype=torch.double, device=device)
+            noise_shape, dtype=torch.float, device=device)
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
-        fake_outputs = discriminator(fake_inputs)
+        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
         fake_label = torch.ones((batch_size, 1), device=device)
         optimizer_G.zero_grad()
         loss_generator = loss_G(fake_outputs, fake_label, reduction="sum")

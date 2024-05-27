@@ -66,7 +66,7 @@ class NoiseInjection(nn.Module):
 def Up(
         in_channels:int, out_channels:int, 
         times:int=1, noise_injection:bool=False,)->nn.Module:
-    block  = []
+    block  = nn.ModuleList()
     for i in range(times):
         block += [
             nn.Conv2d(in_channels if i == 0 else out_channels, out_channels*2, 3, 1, 1, bias=False),
@@ -158,15 +158,15 @@ class Discriminator(nn.Module):
 
         feat32 = self.downconv32(feat64)
         feat32 = self.leakyrelu(feat32)
-        feat32 = self.se32(x, feat32)
+        feat32 = self.se32(high_res, feat32)
 
         feat16 = self.downconv16(feat32)
         feat16 = self.leakyrelu(feat16)
-        feat16 = self.se32(feat128, feat16)
+        feat16 = self.se16(feat128, feat16)
 
         feat8 = self.downconv8(feat16)
         feat8 = self.leakyrelu(feat8)
-        feat8 = self.se32(feat64, feat8)
+        feat8 = self.se8(feat64, feat8)
 
         feat5_high_res = self.downconv8_5(feat8)
 
@@ -184,6 +184,7 @@ if __name__ == '__main__':
     input_noise_shape = (batch_size, 256, 1, 1)
     output_map_shape = (batch_size, 3, 256, 256)
     g = Generator(input_noise_shape, output_map_shape).eval()
+    print(g)
     noise = torch.rand(input_noise_shape, dtype=torch.float32)
     
     # print(g.parameters())
