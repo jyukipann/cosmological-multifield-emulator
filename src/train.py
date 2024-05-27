@@ -7,6 +7,10 @@ import torchvision
 import pathlib
 import datetime
 from torch.utils.tensorboard import SummaryWriter
+import os
+# import warnings
+# warnings.resetwarnings()
+# warnings.simplefilter('error')
 
 def train(
         dataloader, 
@@ -32,8 +36,7 @@ def train(
         real_outputs = discriminator(batch, batch_low_res)
         real_label = torch.ones((batch_size, 1)).to(device)
         
-        noise_batch = torch.rand(
-            noise_shape, dtype=torch.float, device=device)
+        noise_batch = torch.rand(noise_shape).to(device)
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
         fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
         fake_label = torch.zeros((batch_size, 1), device=device)
@@ -47,8 +50,7 @@ def train(
         optimizer_D.step()
         
         # Generator
-        noise_batch = torch.rand(
-            noise_shape, dtype=torch.float, device=device)
+        noise_batch = torch.rand(noise_shape).to(device)
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
         fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
         fake_label = torch.ones((batch_size, 1), device=device)
@@ -59,7 +61,6 @@ def train(
         
         loss_sum_D += loss_discriminator
         loss_sum_G += loss_generator
-        
         if summary_writer is not None:
             summary_writer.add_scalar(
                 "Loss/train/Loss_G", loss_generator, (epoch-1)+(i/max_step))
@@ -76,12 +77,13 @@ def test():
 def train_loop():
      # デバイスの設定
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f'Use {device=}')
     dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
     index_set = list(range(15000))
     train_index_set = index_set[:10000]
     val_index_set = index_set[10000:11500]
     test_index_set = index_set[11500:15000]
-    batch_size = 30
+    batch_size = 100
     cmd = dataset.CAMELSMultifieldDataset(
         dir_path=dir_path,
         ids=train_index_set,
@@ -94,7 +96,7 @@ def train_loop():
     )
 
     # モデルの定義
-    generator = model.Generator((batch_size, 256, 1, 1), (3, 256, 256)).double()
+    generator = model.Generator((256, 1, 1), (3, 256, 256))
     discriminator = model.Discriminator((3, 256, 256))
     loss_D = torchvision.ops.focal_loss.sigmoid_focal_loss
     loss_G = torchvision.ops.focal_loss.sigmoid_focal_loss
@@ -104,15 +106,19 @@ def train_loop():
     optimizer_G = torch.optim.Adam(
         generator.parameters(), lr=lr, betas=(0.5, 0.999))
     
-    output_dir = 'experiment_results'
     
     max_epoch = 2
-    
+    output_dir = 'experiment_results'
     output_dir = pathlib.Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
     time_stamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    log_dir = f'logs/{time_stamp}'
+    log_dir = pathlib.Path(log_dir)
+    if 'IS_GPGPU' in os.environ and bool(os.environ['IS_GPGPU']):
+        output_dir = '..' / output_dir
+        log_dir = '..' / log_dir
     
-    with SummaryWriter(f'logs/{time_stamp}') as writer:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with SummaryWriter(log_dir) as writer:
         for epoch in range(max_epoch):
             train(
                 dataloader, 

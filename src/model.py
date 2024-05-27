@@ -9,13 +9,13 @@ from torch.nn import Sequential as Seq
 class Generator(nn.Module):
     def __init__(self, input_size:tuple, output_size:tuple)->None:
         super().__init__()
-        self.input_size = input_size # expected (b, 256, 1, 1)
+        self.input_size = input_size # expected (256, 1, 1)
         self.output_size = output_size # expected (3, 256, 256)
         
         max_channels = 1024
         self.init = Seq(
             nn.ConvTranspose2d(
-                self.input_size[1], max_channels*2, 4, 1, 0, bias=False),
+                self.input_size[0], max_channels*2, 4, 1, 0, bias=False),
             nn.BatchNorm2d(max_channels*2),
             nn.GLU(1),
         )
@@ -68,10 +68,8 @@ def Up(
         times:int=1, noise_injection:bool=False,)->nn.Module:
     block  = nn.ModuleList()
     for i in range(times):
-        block += [
-            nn.Conv2d(in_channels if i == 0 else out_channels, out_channels*2, 3, 1, 1, bias=False),
-            nn.BatchNorm2d(out_channels*2),
-        ]
+        block.append(nn.Conv2d(in_channels if i == 0 else out_channels, out_channels*2, 3, 1, 1, bias=False))
+        block.append(nn.BatchNorm2d(out_channels*2))
         if noise_injection:
             block.append(NoiseInjection())
         block.append(nn.GLU(1))
@@ -93,8 +91,9 @@ class SkipLayerExcitation(nn.Module):
             nn.Sigmoid(),
         )
     
-    def forward(self, low_res: tensor, high_res:tensor)->tensor:
-        return high_res * self.layers(low_res)
+    def forward(self, x1: tensor, x2:tensor)->tensor:
+        x1 = self.layers(x1)
+        return torch.mul(x2, x1)
 
 class Discriminator(nn.Module):
     def __init__(self, input_size:tuple)->None:
@@ -183,9 +182,11 @@ if __name__ == '__main__':
     batch_size = 1
     input_noise_shape = (batch_size, 256, 1, 1)
     output_map_shape = (batch_size, 3, 256, 256)
-    g = Generator(input_noise_shape, output_map_shape).eval()
-    print(g)
     noise = torch.rand(input_noise_shape, dtype=torch.float32)
+    g = Generator(input_noise_shape[1:], output_map_shape[1:]).eval()
+    g = torch.jit.trace(g, (noise,))
+    print(g)
+    
     
     # print(g.parameters())
     # print(x.shape)
@@ -201,10 +202,11 @@ if __name__ == '__main__':
     # )
 
     
-    d = Discriminator((3,256,256))
+    d = Discriminator(output_map_shape[1:]).eval()
+    d = torch.jit.trace(d, (high_res, low_res))
     print(d)
     
     x = d(high_res, low_res)
     print(x.shape)
 
-    
+    torch.functional.ma
