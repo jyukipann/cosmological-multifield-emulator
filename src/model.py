@@ -100,18 +100,75 @@ class Discriminator(nn.Module):
     def __init__(self, input_size:tuple)->None:
         super().__init__()
         self.input_size = input_size # (3, 256, 256)
-        self.vit = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
-        self.vit.heads.head = nn.Linear(
-            in_features=768, out_features=1, bias=True)
-        self.sigmoid = nn.Sigmoid()
-        # 形状合わせて無理やり入力
-        self.resize = torchvision.transforms.Resize((224,224))
+        # self.vit = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
+        # self.vit.heads.head = nn.Linear(
+        #     in_features=768, out_features=1, bias=True)
+        # self.sigmoid = nn.Sigmoid()
+        # # 形状合わせて無理やり入力
+        # self.resize = torchvision.transforms.Resize((224,224))
+
+
+
+        # max_channels = 1024
+        channels = [128, 64, 32, 16, 8, 1]
+        # channels = [max_channels // 2**i for i in [0, 1, 2, 3, 4, 5, 6, 7]]
+
         
-    def forward(self, maps):
-        x = maps
-        x = self.resize(x).to(torch.float)
-        x = self.vit(x)
-        x = self.sigmoid(x)
+        self.convolution_high = Seq(
+            nn.Conv2d(self.input_size[0], channels[0], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[0], channels[1], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[1], channels[2], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[2], channels[3], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[3], channels[4], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[4], channels[5], 3, 1, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[5], channels[5], 4, 1, 0),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[5], 1, 1, 1, 0),
+            nn.Flatten()
+        )
+
+
+        self.convolution_low = Seq(
+            nn.Conv2d(self.input_size[0], channels[1], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[1], channels[2], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[2], channels[3], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[3], channels[4], 3, 2, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[4], channels[5], 3, 1, 1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[5], channels[5], 4, 1, 0),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels[5], 1, 1, 1, 0),
+            nn.Flatten()
+        )
+
+        self.linear = Seq(
+            nn.Linear(50, 25),
+            nn.Linear(25, 12),
+            nn.Linear(12, 1)
+        )
+        
+    
+        
+    def forward(self, high_res, low_res):
+        x = high_res
+        x = self.convolution_high(x)
+        y = low_res
+        y = self.convolution_low(y)
+
+        x = torch.cat((x, y), -1)
+        
+        x = self.linear(x)
+
         return x
 
 
@@ -128,17 +185,19 @@ if __name__ == '__main__':
     high_res, low_res = g(noise)
     print(f"{high_res.size()=} {low_res.size()=}")
 
-    import utils, datetime
-    now = datetime.datetime.now()
-    utils.plot_map(
-        high_res[0,0].detach().numpy(), 
-        utils.PREFIX_CMAP_DICT['Mgas'], 
-        f'dump/Mgas_{now}.png',
-    )
+    # import utils, datetime
+    # now = datetime.datetime.now()
+    # utils.plot_map(
+    #     high_res[0,0].detach().numpy(), 
+    #     utils.PREFIX_CMAP_DICT['Mgas'], 
+    #     f'dump/Mgas_{now}.png',
+    # )
 
     
-    # d = Discriminator((1,3,256,256))
-    # # print(d.vit)
+    d = Discriminator((3,256,256))
+    # print(d.vit)
     
-    # x = d(x)
-    # print(x.shape)
+    x = d(high_res, low_res)
+    print(x.shape)
+
+    
