@@ -105,7 +105,7 @@ def train_loop():
     
     output_dir = pathlib.Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    time_stamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S') 
+    time_stamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     
     with SummaryWriter(f'logs/{time_stamp}') as writer:
         for epoch in range(max_epoch):
