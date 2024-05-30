@@ -57,9 +57,6 @@ def tensorboard_test():
         writer.add_image("generated_image/hi", hi, i)
         writer.add_image("generated_image/b", b, i)
 
-
-
-
 if __name__ == '__main__':
     print('playground')
     tensorboard_test()
