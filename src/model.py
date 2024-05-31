@@ -1,7 +1,6 @@
 from typing import Tuple
 import torch
 import torch.nn as nn
-from torchvision.models import vit_b_16, ViT_B_16_Weights
 import torchvision
 from torch import tensor
 from torch.nn import Sequential as Seq
@@ -168,7 +167,6 @@ class Discriminator(nn.Module):
         feat8 = self.se8(feat64, feat8)
 
         feat5_high_res = self.downconv8_5(feat8)
-
         feat5_low_res = self.convolution_low(low_res)
 
         x = torch.cat((feat5_high_res, feat5_low_res), -1)        

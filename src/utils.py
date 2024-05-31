@@ -104,10 +104,18 @@ if __name__ == '__main__':
     print(images['Mgas'].shape)
     
     torchvision.io.write_png(images['Mgas'], 'dump/0_Mgas.png')
-    
-    
-    
-    
-    
-    
-    
+
+    """
+{
+    "id": int,
+    "omega_m": float,
+    "sigma_8": float,
+    "A_SN1": float,
+    "A_SN2": float,
+    "A_AGN1": float,
+    "A_AGN2": float,
+    "Mgas": numpy.ndarray,
+    "HI": numpy.ndarray,
+    "B": numpy.ndarray,
+}
+    """

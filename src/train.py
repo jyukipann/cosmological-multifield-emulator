@@ -1,13 +1,13 @@
-import torch
-import torchvision.transforms.functional
-import model
-import dataset
-import tqdm
-import torchvision
+import os
 import pathlib
 import datetime
+import tqdm
+import torch
+import torchvision.transforms.functional
+import torchvision
 from torch.utils.tensorboard import SummaryWriter
-import os
+from model import Generator, Discriminator
+import dataset
 # import warnings
 # warnings.resetwarnings()
 # warnings.simplefilter('error')
@@ -29,8 +29,8 @@ def train(
         # print(batch.shape)
         noise_shape = (batch_size, 256, 1, 1)
 
-        generator = generator.to(device).train()
-        discriminator = discriminator.to(device).train()
+        generator:Generator = generator.to(device).train()
+        discriminator:Discriminator = discriminator.to(device).train()
         
         # Discriminator
         real_outputs = discriminator(batch, batch_low_res)
@@ -69,10 +69,32 @@ def train(
     print(f"{epoch=} : loss_generator={loss_sum_G/max_step}, loss_discriminator={loss_sum_D/max_step}")
 
 
-def test():
+def val(
+        dataloader, 
+        generator, discriminator, 
+        epoch, device, 
+        threshold=0.5, summary_writer:SummaryWriter=None):
     # 画像を生成して、データセットとの分布をはかりたい。
     # 識別器の知らない画像を入力し、正解率をはかりたい
-    pass
+    max_step = len(dataloader)
+    for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"epoch {epoch}", total=max_step):
+        batch_size = batch.shape[0]
+        batch = batch.to(device)
+        batch_low_res =  torchvision.transforms.functional.resize(batch, (128, 128))
+        # print(batch.shape)
+        noise_shape = (batch_size, 256, 1, 1)
+
+        generator:Generator = generator.to(device).eval()
+        discriminator:Discriminator = discriminator.to(device).eval()
+        noise_batch = torch.rand(noise_shape).to(device)
+        fake_high_res, fake_low_res = generator(noise_batch)
+        
+        fake_results = discriminator(fake_high_res, fake_low_res)
+        accuracy =  torcheval
+        
+        
+        if summary_writer is not None:
+            summary_writer
 
 def train_loop():
      # デバイスの設定
@@ -96,8 +118,8 @@ def train_loop():
     )
 
     # モデルの定義
-    generator = model.Generator((256, 1, 1), (3, 256, 256))
-    discriminator = model.Discriminator((3, 256, 256))
+    generator = Generator((256, 1, 1), (3, 256, 256))
+    discriminator = Discriminator((3, 256, 256))
     loss_D = torchvision.ops.focal_loss.sigmoid_focal_loss
     loss_G = torchvision.ops.focal_loss.sigmoid_focal_loss
     lr = 0.0001
@@ -105,7 +127,6 @@ def train_loop():
         discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
     optimizer_G = torch.optim.Adam(
         generator.parameters(), lr=lr, betas=(0.5, 0.999))
-    
     
     max_epoch = 2
     output_dir = 'experiment_results'
@@ -126,7 +147,6 @@ def train_loop():
                 loss_G, loss_D, 
                 optimizer_G, optimizer_D, 
                 epoch, device)
-
 
     # save models
     torch.save(generator, str(output_dir/f'generator_{time_stamp}.pth'))
