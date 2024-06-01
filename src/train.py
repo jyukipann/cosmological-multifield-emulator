@@ -122,7 +122,7 @@ def val(
         hi = utils.plot_map(hi, utils.PREFIX_CMAP_DICT['HI'])
         b = utils.plot_map(b, utils.PREFIX_CMAP_DICT['B'])
         mgas_hi_b = torch.cat([mgas, hi, b], dim=2)
-        summary_writer.add_image("val/mgas_hi_b", mgas_hi_b, i)
+        summary_writer.add_image("val/mgas_hi_b", mgas_hi_b, epoch)
     print(f"{accuracy=}")
 
 def train_loop():
