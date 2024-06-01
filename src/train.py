@@ -114,8 +114,7 @@ def val(
         
     accuracy = accuracy_sum / max_step
     if summary_writer is not None:
-        summary_writer.add_scalar(
-            "val/D_accuracy", accuracy, (epoch-1)+(i/max_step))
+        summary_writer.add_scalar("val/D_accuracy", accuracy, epoch)
         
         # 生成画像を可視化
         mgas,hi,b = fake_high_res[0].cpu().detach().numpy()
