@@ -164,3 +164,4 @@ cython_debug/
 *.pkl
 /dump
 memo.md
+experiment_results/*/events.out.tfevents.*

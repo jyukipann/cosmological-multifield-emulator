@@ -141,7 +141,7 @@ def train_loop():
     val_index_set = index_set[10000:11500]
     test_index_set = index_set[11500:15000]
     # バッチサイズ指定
-    batch_size = 100
+    batch_size = 50
     # データセットとデータローダーのインスタンス化
     cmd_train = dataset.CAMELSMultifieldDataset(
         dir_path=dir_path,
@@ -178,9 +178,9 @@ def train_loop():
     max_epoch = 2
     val_inerval = 1
     checkpoint_interval = 10
-    output_dir = 'experiment_results'
-    log_dir = f'logs/{time_stamp}'
-    output_dir = pathlib.Path(output_dir)    
+    output_dir = f'experiment_results/{time_stamp}'
+    log_dir = f'experiment_results/{time_stamp}'
+    output_dir = pathlib.Path(output_dir)
     log_dir = pathlib.Path(log_dir)
     if 'IS_GPGPU' in os.environ and bool(os.environ['IS_GPGPU']):
         output_dir = '..' / output_dir
@@ -205,12 +205,12 @@ def train_loop():
                     summary_writer=writer)
             if epoch % checkpoint_interval == 0:
                 # save models
-                torch.save(generator, str(output_dir/f'generator_{time_stamp}_checkpoint_{epoch}epoch.pth'))
-                torch.save(discriminator, str(output_dir/f'discriminator_{time_stamp}_checkpoint_{epoch}epoch.pth'))
+                torch.save(generator, str(output_dir/f'generator_checkpoint_{epoch}epoch.pth'))
+                torch.save(discriminator, str(output_dir/f'discriminator_checkpoint_{epoch}epoch.pth'))
 
     # save models
-    torch.save(generator, str(output_dir/f'generator_{time_stamp}.pth'))
-    torch.save(discriminator, str(output_dir/f'discriminator_{time_stamp}.pth'))
+    torch.save(generator, str(output_dir/f'generator.pth'))
+    torch.save(discriminator, str(output_dir/f'discriminator.pth'))
 
 def main():
     train_loop()
