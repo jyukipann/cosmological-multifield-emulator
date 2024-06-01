@@ -148,7 +148,7 @@ def train_loop():
     # train configs
     batch_size = 50
     max_epoch = 300
-    val_inerval = 1
+    val_inerval = 10
     checkpoint_interval = 10
     lr = 0.0001
 
