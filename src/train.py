@@ -84,8 +84,6 @@ def val(
         generator, discriminator, 
         epoch, device, 
         threshold=0.5, summary_writer:SummaryWriter=None):
-    # 画像を生成して、データセットとの分布をはかりたい。
-    # 識別器の知らない画像を入力し、正解率をはかりたい
     max_step = len(dataloader)
     metric = BinaryAccuracy(threshold=threshold)
     accuracy_sum = 0
@@ -130,18 +128,31 @@ def val(
 
 def train_loop():
     time_stamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    
     # デバイスの設定
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'Use {device=}')
-    # データセット　パス
+    
+    # dataset path
     dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
-    # データセットの分割
+    
+    # output path   
+    output_dir = f'experiment_results/{time_stamp}'
+    log_dir = f'experiment_results/{time_stamp}'
+
+    # split dataset
     index_set = list(range(15000))
     train_index_set = index_set[:10000]
     val_index_set = index_set[10000:11500]
     test_index_set = index_set[11500:15000]
-    # バッチサイズ指定
+
+    # train configs
     batch_size = 50
+    max_epoch = 2
+    val_inerval = 1
+    checkpoint_interval = 10
+    lr = 0.0001
+
     # データセットとデータローダーのインスタンス化
     cmd_train = dataset.CAMELSMultifieldDataset(
         dir_path=dir_path,
@@ -164,30 +175,31 @@ def train_loop():
         num_workers=4
     )
 
-    # モデルの定義
+    # Model
     generator = Generator((256, 1, 1), (3, 256, 256))
     discriminator = Discriminator((3, 256, 256))
+
+    # Loss
     loss_D = torchvision.ops.focal_loss.sigmoid_focal_loss
     loss_G = torch.nn.HuberLoss()
-    lr = 0.0001
+
+    # Optimizer
     optimizer_D = torch.optim.Adam(
         discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
     optimizer_G = torch.optim.Adam(
         generator.parameters(), lr=lr, betas=(0.5, 0.999))
     
-    max_epoch = 2
-    val_inerval = 1
-    checkpoint_interval = 10
-    output_dir = f'experiment_results/{time_stamp}'
-    log_dir = f'experiment_results/{time_stamp}'
+    # log dir
     output_dir = pathlib.Path(output_dir)
     log_dir = pathlib.Path(log_dir)
     if 'IS_GPGPU' in os.environ and bool(os.environ['IS_GPGPU']):
         output_dir = '..' / output_dir
         log_dir = '..' / log_dir
-    
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # open SummaryWriter
     with SummaryWriter(log_dir) as writer:
+        # Train loop
         for epoch in range(1, max_epoch+1):
             train(
                 dataloader_train, 
@@ -203,6 +215,7 @@ def train_loop():
                     epoch, device,
                     threshold=0.5,
                     summary_writer=writer)
+            # save checkpoint
             if epoch % checkpoint_interval == 0:
                 # save models
                 torch.save(generator, str(output_dir/f'generator_checkpoint_{epoch}epoch.pth'))
