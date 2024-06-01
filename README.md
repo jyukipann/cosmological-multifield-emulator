@@ -178,6 +178,12 @@ if __name__ == '__main__':
 
 ## モデルについて
 
+## 実験
+### 学習時コマンド
+```bash
+nohup python src/train.py > train_log.out
+```
+
 
 ## 参考文献リスト
 - [PytorchでGANを実装してみた。](https://qiita.com/keiji_dl/items/45a5775a361151f9189d)をベースに実装すると素早く実装を終えられそう。

@@ -198,6 +198,7 @@ def train_loop():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # open SummaryWriter
+    print(f"Log Dir {log_dir}")
     with SummaryWriter(log_dir) as writer:
         # Train loop
         for epoch in range(1, max_epoch+1):
@@ -218,12 +219,20 @@ def train_loop():
             # save checkpoint
             if epoch % checkpoint_interval == 0:
                 # save models
-                torch.save(generator, str(output_dir/f'generator_checkpoint_{epoch}epoch.pth'))
-                torch.save(discriminator, str(output_dir/f'discriminator_checkpoint_{epoch}epoch.pth'))
+                g_name = str(output_dir/f'generator_checkpoint_{epoch}epoch.pth')
+                d_name = str(output_dir/f'discriminator_checkpoint_{epoch}epoch.pth')
+                torch.save(generator, g_name)
+                torch.save(discriminator, d_name)
+                print(f"model saved: {g_name}")
+                print(f"model saved: {d_name}")
 
     # save models
-    torch.save(generator, str(output_dir/f'generator.pth'))
-    torch.save(discriminator, str(output_dir/f'discriminator.pth'))
+    g_name = str(output_dir/f'generator.pth')
+    d_name = str(output_dir/f'discriminator.pth')
+    torch.save(generator, g_name)
+    torch.save(discriminator, d_name)
+    print(f"model saved: {g_name}")
+    print(f"model saved: {d_name}")
 
 def main():
     train_loop()
