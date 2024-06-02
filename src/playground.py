@@ -1,3 +1,4 @@
+from typing import Tuple
 import utils
 import numpy as np
 import pathlib
@@ -56,6 +57,10 @@ def tensorboard_test():
         writer.add_image("generated_image/mgas", mgas, i)
         writer.add_image("generated_image/hi", hi, i)
         writer.add_image("generated_image/b", b, i)
+
+
+def hist_map(map_data:np.ndarray)->Tuple[np.ndarray]:
+    return np.histogram(map_data,)
 
 if __name__ == '__main__':
     print('playground')

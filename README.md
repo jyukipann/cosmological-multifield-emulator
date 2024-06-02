@@ -185,6 +185,13 @@ nohup python src/train.py > train_log.out
 ```
 
 
+## 2024 06 01 試験的に学習を行った実験について
+当時時点のコードで300epoch学習を回した。  
+結果として論文と同様の結果は得られなかったため、失敗と言える。  
+収穫として、学習を安定化することが難しいという知見を得た。生成器、識別器の両Loss値の推移を見ると乱高下を繰り返しており、不安定であった。  
+そのため、今後は学習安定化のための施策が必要であると考える。例えば、BatchNormalizeや入力値の正規化[-1, 1]などである。  
+他にもGANを用いる際によく用いられる手法を組み込むことで安定化させたい。
+
 ## 参考文献リスト
 - [PytorchでGANを実装してみた。](https://qiita.com/keiji_dl/items/45a5775a361151f9189d)をベースに実装すると素早く実装を終えられそう。
 - [CMD 公式実装サンプル(Colab)](https://colab.research.google.com/drive/1bT1OXxEPi2IaFs7sJn96M7scFtiKLygj?usp=sharing)
