@@ -24,6 +24,7 @@ def load_from_pickle(path:pathlib.Path)->dict:
         data = pickle.load(f)
     return data
 
+# todo log10取って、正規化したい
 def extract_map(
         map_paths:List[pathlib.Path | str,],
         params_path:pathlib.Path | str,
