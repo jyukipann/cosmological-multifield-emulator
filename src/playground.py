@@ -64,6 +64,26 @@ def hist_map(map_data:np.ndarray)->Tuple[np.ndarray]:
 
 if __name__ == '__main__':
     print('playground')
-    tensorboard_test()
+    # tensorboard_test()
     # display_maps_test()
     # map_counter()
+    
+    data = utils.load_from_pickle('dataset/Maps_IllustrisTNG_LH_z=0.00/0.pkl')
+    mgas = data['Mgas']
+    hi = data['HI']
+    b = data['B']
+    hist = np.histogram(mgas,bins=500)
+    print(hist)
+
+    mean = np.mean(mgas)
+    var = np.var(mgas)
+    print(mean, var)
+
+    mgas = np.log10(mgas)
+    mean = np.mean(mgas)
+    var = np.var(mgas)
+    print(mean, var)
+    # plt.stairs(hist[0], hist[1])
+    # plt.yscale('log')
+    # plt.savefig('dump/Mgas_0_hist.png')
+    

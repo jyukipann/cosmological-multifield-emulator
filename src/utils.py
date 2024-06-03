@@ -86,7 +86,6 @@ def plot_map(map_data:tensor, cmap:plt.cm, out_path=None)->tensor:
     return dst[:-1]
         
 if __name__ == '__main__':
-    # set_value = 'EX'
     set_value = 'LH'
     map_paths = [
         f'dataset/Maps_Mgas_IllustrisTNG_{set_value}_z=0.00.npy',
@@ -96,7 +95,7 @@ if __name__ == '__main__':
     params_path = f'dataset/params_{set_value}_IllustrisTNG.txt'
     out_dir = f'dataset/Maps_IllustrisTNG_{set_value}_z=0.00'
     
-    # extract_map(map_paths, params_path, out_dir)
+    extract_map(map_paths, params_path, out_dir)
     
     data_id_0 = load_from_pickle(pathlib.Path(out_dir) / f'0.pkl')
     print(data_id_0)
