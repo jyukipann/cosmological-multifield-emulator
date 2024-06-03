@@ -24,6 +24,24 @@ Downloaded: 201 files, 162G in 7h 56m 39s (5.80 MB/s)
 ```
 約8時間かかった。
 
+### 扱いやすくフォーマット
+15,000枚×3のマップを分割して扱いやすいように保存する。
+`utils.py`を変更して`extract_map`関数を実行する。pickleになる。
+```python
+# utils.pyを変更してextract_map関数を実行
+if __name__ == '__main__':
+    set_value = 'LH'
+    map_paths = [
+        f'dataset/Maps_Mgas_IllustrisTNG_{set_value}_z=0.00.npy',
+        f'dataset/Maps_HI_IllustrisTNG_{set_value}_z=0.00.npy',
+        f'dataset/Maps_B_IllustrisTNG_{set_value}_z=0.00.npy',
+    ]
+    params_path = f'dataset/params_{set_value}_IllustrisTNG.txt'
+    out_dir = f'dataset/Maps_IllustrisTNG_{set_value}_z=0.00'
+    
+    extract_map(map_paths, params_path, out_dir)
+```
+
 ## データセットついて
 
 [データセットの説明](https://camels-multifield-dataset.readthedocs.io/en/latest/data.html)を参照。  
