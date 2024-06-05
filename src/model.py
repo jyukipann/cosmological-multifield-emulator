@@ -99,7 +99,6 @@ class Discriminator(nn.Module):
         super().__init__()
         self.input_size = input_size # (3, 256, 256)
 
-        # max_channels = 1024
         channels = [128, 64, 32, 16, 8, 1]
 
         self.leakyrelu = nn.LeakyReLU(0.2)
@@ -123,7 +122,7 @@ class Discriminator(nn.Module):
             nn.Flatten()
         )
 
-        self.convolution_low = Seq(
+        self.convolution_low_8 = Seq(
             nn.Conv2d(self.input_size[0], channels[1], 3, 2, 1),
             nn.LeakyReLU(0.2),
             nn.Conv2d(channels[1], channels[2], 3, 2, 1),
@@ -131,7 +130,10 @@ class Discriminator(nn.Module):
             nn.Conv2d(channels[2], channels[3], 3, 2, 1),
             nn.LeakyReLU(0.2),
             nn.Conv2d(channels[3], channels[4], 3, 2, 1),
-            nn.LeakyReLU(0.2),
+            nn.LeakyReLU(0.2)
+        )
+
+        self.convolution_low_5 = Seq(
             nn.Conv2d(channels[4], channels[5], 3, 1, 1),
             nn.LeakyReLU(0.2),
             nn.Conv2d(channels[5], channels[5], 4, 1, 0),
@@ -145,6 +147,10 @@ class Discriminator(nn.Module):
             nn.Linear(25, 12),
             nn.Linear(12, 1)
         )
+
+        self.decoder_high_8 = SimpleDecoder(channels[4])
+        self.decoder_high_16 = SimpleDecoder(channels[3])
+        self.decoder_low = SimpleDecoder(channels[4])
             
         
     def forward(self, high_res, low_res):
@@ -167,12 +173,57 @@ class Discriminator(nn.Module):
         feat8 = self.se8(feat64, feat8)
 
         feat5_high_res = self.downconv8_5(feat8)
-        feat5_low_res = self.convolution_low(low_res)
+        feat8_low_res = self.convolution_low_8(low_res)
+        feat5_low_res = self.convolution_low_5(feat8_low_res)
 
-        x = torch.cat((feat5_high_res, feat5_low_res), -1)        
+        x = torch.cat((feat5_high_res, feat5_low_res), -1)
         x = self.linear(x)
 
-        return x
+        deco_high_8 = self.decoder_high_8(feat8)
+        deco_high_16 = self.decoder_high_16(feat16)
+        deco_low = self.decoder_low(feat8_low_res)
+
+        return x, [deco_high_8, deco_high_16, deco_low]
+
+
+class SimpleDecoder(nn.Module):
+    def __init__(self, input_size:tuple)->None:
+        super().__init__()
+        self.input_size = input_size # 8 or 16
+
+        channels = [48, 24, 12, 6, 3]
+
+        # 16*16*16を48*8*8にする
+        self.pretreatment_for16 = nn.Conv2d(self.input_size, channels[0], 3, 2, 1)
+        # 8*8*8を48*8*8にする
+        self.pretreatment_for8 = nn.Conv2d(self.input_size, channels[0], 3, 1, 1)
+        
+        self.SD = Seq(
+            upBlock(channels[0], channels[1]), # 1回目
+            upBlock(channels[1], channels[2]), # 2回目
+            upBlock(channels[2], channels[3]), # 3回目
+            upBlock(channels[3], channels[4]), # 4回目
+            # nn.Conv2d(channels[4], channels[5], 3, 1, 1),   # (32, 128, 128)を(3, 128, 128)にする
+            nn.Tanh()   # 正規化
+        )
+
+    def forward(self, input):
+        if input.shape[1] == 16:
+            feat8 = self.pretreatment_for16(input)
+        else:
+            feat8 = self.pretreatment_for8(input)
+
+        return self.SD(feat8)
+
+
+def upBlock(in_channel, out_channel):
+    block = Seq(
+        nn.Upsample(scale_factor=2, mode='nearest'),
+        nn.Conv2d(in_channel, out_channel*2, 3, 1, 1),
+        nn.BatchNorm2d(out_channel*2),
+        nn.GLU(1)
+    )
+    return block
 
 
 if __name__ == '__main__':
@@ -199,12 +250,14 @@ if __name__ == '__main__':
     #     f'dump/Mgas_{now}.png',
     # )
 
-    
+
     d = Discriminator(output_map_shape[1:]).eval()
     d = torch.jit.trace(d, (high_res, low_res))
     print(d)
     
     x = d(high_res, low_res)
-    print(x.shape)
+    print(x[0].shape)
+    for i in range(3):
+        print(x[1][i].shape)    # Decoderで生成した画像のshapeを表示
 
     torch.functional.ma
