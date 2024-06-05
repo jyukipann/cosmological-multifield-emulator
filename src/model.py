@@ -181,9 +181,9 @@ class Discriminator(nn.Module):
 
         deco_high_8 = self.decoder_high_8(feat8)
         deco_high_16 = self.decoder_high_16(feat16)
-        deco_low = self.decoder_low(feat8_low_res)
+        deco_low_8 = self.decoder_low(feat8_low_res)
 
-        return x, [deco_high_8, deco_high_16, deco_low]
+        return x, deco_high_8, deco_high_16, deco_low_8
 
 
 class SimpleDecoder(nn.Module):
@@ -255,9 +255,12 @@ if __name__ == '__main__':
     d = torch.jit.trace(d, (high_res, low_res))
     print(d)
     
-    x = d(high_res, low_res)
-    print(x[0].shape)
-    for i in range(3):
-        print(x[1][i].shape)    # Decoderで生成した画像のshapeを表示
+    ret = d(high_res, low_res)
+    ret, low_res_maps = ret[0], ret[1:]
 
-    torch.functional.ma
+    print(ret.size())
+    print(low_res_maps[0].size())
+    print(low_res_maps[1].size())
+    print(low_res_maps[2].size())
+
+    
