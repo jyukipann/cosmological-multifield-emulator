@@ -40,6 +40,8 @@ def train(
         # Discriminator
         real_outputs = discriminator(batch, batch_low_res)
         real_label = torch.ones((batch_size, 1)).to(device)
+        # Label Smoothing
+        real_label *=  0.9
         
         noise_batch = torch.rand(noise_shape).to(device)
         # paramsを生成用ノイズに混入
@@ -47,6 +49,8 @@ def train(
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
         fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
         fake_label = torch.zeros((batch_size, 1), device=device)
+        # Label Smoothing
+        fake_label += 0.1
         
         outputs = torch.cat((real_outputs, fake_outputs), dim=-1)
         labels = torch.cat((real_label, fake_label), dim=-1)

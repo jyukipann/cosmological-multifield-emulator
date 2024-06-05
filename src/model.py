@@ -1,7 +1,6 @@
 from typing import Tuple
 import torch
 import torch.nn as nn
-import torchvision
 from torch import tensor
 from torch.nn import Sequential as Seq
 
@@ -31,8 +30,14 @@ class Generator(nn.Module):
         self.se128 = SkipLayerExcitation(channels[1], channels[5], channels[5])
         self.se256 = SkipLayerExcitation(channels[2], channels[6], channels[6])
         
-        self.arrange_channel128 = nn.Conv2d(channels[5], 3, 3, 1, 1, bias=True)
-        self.arrange_channel256 = nn.Conv2d(channels[6], 3, 3, 1, 1, bias=True)
+        self.arrange_channel128 = Seq(
+            nn.Conv2d(channels[5], 3, 3, 1, 1, bias=True),
+            nn.Tanh(),
+        )
+        self.arrange_channel256 = Seq(
+            nn.Conv2d(channels[6], 3, 3, 1, 1, bias=True),
+            nn.Tanh(),
+        )
         
         
     def forward(self, x)->Tuple[tensor, tensor]:
@@ -47,8 +52,8 @@ class Generator(nn.Module):
         
         low_res = self.arrange_channel128(feat128)
         high_res = self.arrange_channel256(feat256)
-        low_res = torch.abs(low_res)
-        high_res = torch.abs(high_res)
+        # low_res = torch.abs(low_res)
+        # high_res = torch.abs(high_res)
         return high_res, low_res
 
 class NoiseInjection(nn.Module):
@@ -119,7 +124,7 @@ class Discriminator(nn.Module):
             nn.Conv2d(channels[4], channels[5], 3, 1, 1),
             nn.Conv2d(channels[5], channels[5], 4, 1, 0),
             nn.Conv2d(channels[5], 1, 1, 1, 0),
-            nn.Flatten()
+            nn.Flatten(),
         )
 
         self.convolution_low_8 = Seq(
@@ -130,7 +135,7 @@ class Discriminator(nn.Module):
             nn.Conv2d(channels[2], channels[3], 3, 2, 1),
             nn.LeakyReLU(0.2),
             nn.Conv2d(channels[3], channels[4], 3, 2, 1),
-            nn.LeakyReLU(0.2)
+            nn.LeakyReLU(0.2),
         )
 
         self.convolution_low_5 = Seq(
@@ -139,13 +144,16 @@ class Discriminator(nn.Module):
             nn.Conv2d(channels[5], channels[5], 4, 1, 0),
             nn.LeakyReLU(0.2),
             nn.Conv2d(channels[5], 1, 1, 1, 0),
-            nn.Flatten()
+            nn.Flatten(),
         )
 
         self.linear = Seq(
             nn.Linear(50, 25),
+            nn.ReLU(),
             nn.Linear(25, 12),
-            nn.Linear(12, 1)
+            nn.ReLU(),
+            nn.Linear(12, 1),
+            nn.Sigmoid(),
         )
 
         self.decoder_high_8 = SimpleDecoder(channels[4])

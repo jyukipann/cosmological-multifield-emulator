@@ -218,3 +218,6 @@ nohup python src/train.py > train_log.out
 - [PyTorch Datasets & DataLoaders](https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)
 - [[画像]Skip-layer excitationの構造について](https://www.researchgate.net/figure/The-structure-of-the-skip-layer-excitation-module-and-the-Generator-Yellow-boxes_fig3_348486394)
   - [[GitHub]公式実装 FastGAN-pytorch](https://github.com/odegeasslbc/FastGAN-pytorch/tree/main)
+- [GAN(Generative Adversarial Networks)を学習させる際の14のテクニック](https://qiita.com/underfitting/items/a0cbb035568dea33b2d7)
+  - 少し古いがGAN自体が古い手法であるので役に立つはず
+- [GANのトレーニングに役立つ10のヒント](https://webbigdata.jp/post-9801/)

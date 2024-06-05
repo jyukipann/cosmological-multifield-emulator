@@ -94,7 +94,13 @@ if __name__ == '__main__':
         f'dataset/Maps_HI_IllustrisTNG_{set_value}_z=0.00.npy',
         f'dataset/Maps_B_IllustrisTNG_{set_value}_z=0.00.npy',
     ]
-    mgas_maps = np.load(map_paths[0])
-    mgas_maps = np.log10(mgas_maps)
-    mgas_max = np.max(mgas_maps)
-    print(mgas_max)
+    for i, p  in enumerate(map_paths):
+        print(p)
+        data_maps = np.load(p)
+        data_maps = np.log10(data_maps)
+        data_max = np.max(data_maps)
+        data_min = np.min(data_maps)
+        data_mean = np.mean(data_maps)
+        data_var = np.var(data_maps)
+        print(f'\t{data_mean=}, {data_var=}')
+        print(f'\t{data_min=}, {data_max=}')
