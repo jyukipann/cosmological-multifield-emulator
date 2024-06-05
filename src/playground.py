@@ -68,22 +68,33 @@ if __name__ == '__main__':
     # display_maps_test()
     # map_counter()
     
-    data = utils.load_from_pickle('dataset/Maps_IllustrisTNG_LH_z=0.00/0.pkl')
-    mgas = data['Mgas']
-    hi = data['HI']
-    b = data['B']
-    hist = np.histogram(mgas,bins=500)
-    print(hist)
+    # data = utils.load_from_pickle('dataset/Maps_IllustrisTNG_LH_z=0.00/0.pkl')
+    # mgas = data['Mgas']
+    # hi = data['HI']
+    # b = data['B']
+    # hist = np.histogram(mgas,bins=500)
+    # print(hist)
 
-    mean = np.mean(mgas)
-    var = np.var(mgas)
-    print(mean, var)
+    # mean = np.mean(mgas)
+    # var = np.var(mgas)
+    # print(mean, var)
 
-    mgas = np.log10(mgas)
-    mean = np.mean(mgas)
-    var = np.var(mgas)
-    print(mean, var)
+    # mgas = np.log10(mgas)
+    # mean = np.mean(mgas)
+    # var = np.var(mgas)
+    # print(mean, var)
+
     # plt.stairs(hist[0], hist[1])
     # plt.yscale('log')
     # plt.savefig('dump/Mgas_0_hist.png')
     
+    set_value = 'LH'
+    map_paths = [
+        f'dataset/Maps_Mgas_IllustrisTNG_{set_value}_z=0.00.npy',
+        f'dataset/Maps_HI_IllustrisTNG_{set_value}_z=0.00.npy',
+        f'dataset/Maps_B_IllustrisTNG_{set_value}_z=0.00.npy',
+    ]
+    mgas_maps = np.load(map_paths[0])
+    mgas_maps = np.log10(mgas_maps)
+    mgas_max = np.max(mgas_maps)
+    print(mgas_max)
