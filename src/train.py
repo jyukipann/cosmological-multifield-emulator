@@ -30,43 +30,61 @@ def train(
         params:torch.tensor = params.to(device)
         _, params_dim = params.size()
         params = torch.reshape(params, (-1, params_dim, 1, 1))
-        batch_low_res =  torchvision.transforms.functional.resize(batch, (128, 128))
+
+        # 画像を縮小して、loss計算に使う
+        batch_low_res =  torchvision.transforms.functional.resize(
+            batch, (128, 128))
         # print(batch.shape)
         noise_shape = (batch_size, 256, 1, 1)
 
-        generator:Generator = generator.to(device).train()
-        discriminator:Discriminator = discriminator.to(device).train()
+        generator: Generator = generator.to(device).train()
+        discriminator: Discriminator = discriminator.to(device).train()
         
         # Discriminator
         real_outputs = discriminator(batch, batch_low_res)
+        real_outputs, real_low_res_maps = real_outputs[0], real_outputs[1:]
+
+        # Discriminator学習のための正解の生成
         real_label = torch.ones((batch_size, 1)).to(device)
         # Label Smoothing
         real_label *=  0.9
         
+        # 画像生成用のノイズ生成
         noise_batch = torch.rand(noise_shape).to(device)
         # paramsを生成用ノイズに混入
         noise_batch[:, :params_dim] = params
+        # 生成
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
         fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
-        fake_label = torch.zeros((batch_size, 1), device=device)
+        fake_outputs, fake_low_res_maps = fake_outputs[0], fake_outputs[1:]
+
+        # Discriminator学習のための正解の生成
+        fake_label = torch.ones((batch_size, 1), device=device)
         # Label Smoothing
-        fake_label += 0.1
+        fake_label *= 0.1
         
+        # バッチに混ぜるのは良くないとも聞くのでバラでbackward()を二回するのはあり
         outputs = torch.cat((real_outputs, fake_outputs), dim=-1)
         labels = torch.cat((real_label, fake_label), dim=-1)
 
+        # パラメータ更新
         optimizer_D.zero_grad()
         loss_discriminator = loss_D(outputs, labels, reduction="sum")
         loss_discriminator.backward()
         optimizer_D.step()
         
         # Generator
+        # 画像生成用のノイズ生成
         noise_batch = torch.rand(noise_shape).to(device)
         # paramsを生成用ノイズに混入
         noise_batch[:, :params_dim] = params
+        # 生成
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
         fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
+        fake_outputs, fake_low_res_maps = fake_outputs[0], fake_outputs[1:]
         fake_label = torch.ones((batch_size, 1), device=device)
+        
+        # パラメータ更新
         optimizer_G.zero_grad()
         loss_generator = loss_G(fake_outputs, fake_label)
         loss_generator.backward()
@@ -94,24 +112,37 @@ def val(
     for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"val epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
         batch = batch.to(device)
-        batch_low_res =  torchvision.transforms.functional.resize(batch, (128, 128))
-        # print(batch.shape)
+        params = params.to(device)
         noise_shape = (batch_size, 256, 1, 1)
+        _, params_dim = params.size()
+        params = torch.reshape(params, (-1, params_dim, 1, 1))
 
+        batch_low_res =  torchvision.transforms.functional.resize(
+            batch, (128, 128))
+        
         generator:Generator = generator.to(device).eval()
         discriminator:Discriminator = discriminator.to(device).eval()
+        
+        # ノイズ生成
         noise_batch = torch.rand(noise_shape).to(device)
+        # paramsを生成用ノイズに混入
+        noise_batch[:, :params_dim] = params
+
+        # 生成
         fake_high_res, fake_low_res = generator(noise_batch)
         
-        fake_results = discriminator(fake_high_res, fake_low_res)
-        real_results = discriminator(batch, batch_low_res)
+        # 推論
+        fake_results = discriminator(fake_high_res, fake_low_res)[0]
+        real_results = discriminator(batch, batch_low_res)[0]
+        
+        # 正解生成
         target0 = torch.zeros((batch_size, 1), device=device)
         target1 = torch.ones((batch_size, 1), device=device)
+        # 結果の結合
         results = torch.cat([fake_results, real_results], dim=0).flatten()
         target = torch.cat([target0, target1], dim=0).flatten()
-        # print(f"{target0.size()=} {target1.size()=} {fake_results.size()=} {real_results.size()=}")
-        # print(f"{target.size()=}")
-        # print(f"{results.size()=}")
+        
+        # 正解率計算
         metric.update(results, target)
         accuracy = metric.compute()
         accuracy_sum += accuracy
@@ -122,9 +153,15 @@ def val(
         
         # 生成画像を可視化
         mgas,hi,b = fake_high_res[0].cpu().detach().numpy()
+        # 生成画像をreverse pipelineで表示できる形式に戻す
+        mgas = utils.DATA_NORMALIZE_PIPELINE_REVERSE['Mgas'](mgas)
+        hi = utils.DATA_NORMALIZE_PIPELINE_REVERSE['HI'](hi)
+        b = utils.DATA_NORMALIZE_PIPELINE_REVERSE['B'](b)
+        # RGB画像に変換
         mgas = utils.plot_map(mgas, utils.PREFIX_CMAP_DICT['Mgas'])
         hi = utils.plot_map(hi, utils.PREFIX_CMAP_DICT['HI'])
         b = utils.plot_map(b, utils.PREFIX_CMAP_DICT['B'])
+        # 横に並べて一枚に結合
         mgas_hi_b = torch.cat([mgas, hi, b], dim=2)
         summary_writer.add_image("val/mgas_hi_b", mgas_hi_b, epoch)
     print(f"{accuracy=}")
