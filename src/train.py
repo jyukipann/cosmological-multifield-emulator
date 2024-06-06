@@ -136,8 +136,8 @@ def val(
         real_results = discriminator(batch, batch_low_res)[0]
         
         # 正解生成
-        target0 = torch.zeros((batch_size, 1), device=device)
-        target1 = torch.ones((batch_size, 1), device=device)
+        target0 = torch.zeros((batch_size, 1), device=device, dtype=torch.float32)
+        target1 = torch.ones((batch_size, 1), device=device, dtype=torch.float32)
         # 結果の結合
         results = torch.cat([fake_results, real_results], dim=0).flatten()
         target = torch.cat([target0, target1], dim=0).flatten()
@@ -187,7 +187,7 @@ def train_loop():
     test_index_set = index_set[11500:15000]
 
     # train configs
-    batch_size = 50
+    batch_size = 200
     max_epoch = 300
     val_inerval = 10
     checkpoint_interval = 10

@@ -6,7 +6,7 @@ from torch.nn import Sequential as Seq
 
 class Generator(nn.Module):
     def __init__(self, input_size:tuple, output_size:tuple)->None:
-        super().__init__()
+        super(Generator).__init__()
         self.input_size = input_size # expected (256, 1, 1)
         self.output_size = output_size # expected (3, 256, 256)
         
@@ -58,7 +58,7 @@ class Generator(nn.Module):
 
 class NoiseInjection(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(NoiseInjection).__init__()
         self.weight = nn.Parameter(torch.zeros(1), requires_grad=True)
 
     def forward(self, feat, noise=None):
@@ -86,7 +86,7 @@ class SkipLayerExcitation(nn.Module):
             hidden_channels:int,
             out_res_channels:int,):
         
-        super().__init__()
+        super(SkipLayerExcitation).__init__()
         self.layers = Seq(
             nn.AdaptiveAvgPool2d(4),
             nn.Conv2d(in_channels, hidden_channels, 4, 1, 0),
@@ -101,7 +101,7 @@ class SkipLayerExcitation(nn.Module):
 
 class Discriminator(nn.Module):
     def __init__(self, input_size:tuple)->None:
-        super().__init__()
+        super(Discriminator).__init__()
         self.input_size = input_size # (3, 256, 256)
 
         channels = [128, 64, 32, 16, 8, 1]
@@ -196,7 +196,7 @@ class Discriminator(nn.Module):
 
 class SimpleDecoder(nn.Module):
     def __init__(self, input_size:tuple)->None:
-        super().__init__()
+        super(SimpleDecoder).__init__()
         self.input_size = input_size # 8 or 16
 
         channels = [48, 24, 12, 6, 3]
