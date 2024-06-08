@@ -10,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from model import Generator, Discriminator
 import dataset
 import utils
+import loss
 # import warnings
 # warnings.resetwarnings()
 # warnings.simplefilter('error')
@@ -24,6 +25,8 @@ def train(
     max_step = len(dataloader)
     loss_sum_D = 0
     loss_sum_G = 0
+    rec_loss_func = loss.ReconstructionLoss()
+    focal_loss_func = loss.FocalLoss()
     for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"train epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
         batch:torch.tensor = batch.to(device)
@@ -55,8 +58,7 @@ def train(
         noise_batch[:, :params_dim] = params
         # 生成
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
-        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
-        fake_outputs, fake_low_res_maps = fake_outputs[0], fake_outputs[1:]
+        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)[0]
 
         # Discriminator学習のための正解の生成
         fake_label = torch.ones((batch_size, 1), device=device)
@@ -64,12 +66,22 @@ def train(
         fake_label *= 0.1
         
         # バッチに混ぜるのは良くないとも聞くのでバラでbackward()を二回するのはあり
-        outputs = torch.cat((real_outputs, fake_outputs), dim=-1)
-        labels = torch.cat((real_label, fake_label), dim=-1)
+        # outputs = torch.cat((real_outputs, fake_outputs), dim=-1)
+        # labels = torch.cat((real_label, fake_label), dim=-1)
 
-        # パラメータ更新
+        # Loss計算とパラメータ更新
         optimizer_D.zero_grad()
-        loss_discriminator = loss_D(outputs, labels, reduction="sum")
+        rec_loss = 0
+        rec_loss += rec_loss_func(real_low_res_maps[0], batch_low_res)
+        rec_loss += rec_loss_func(real_low_res_maps[1], batch_low_res)
+        rec_loss += rec_loss_func(real_low_res_maps[2], batch_low_res)
+        rec_loss /= 3
+        
+        focal_loss = focal_loss_func(real_outputs, real_label)
+        focal_loss += focal_loss_func(fake_outputs, fake_label)
+        focal_loss /= 2
+
+        loss_discriminator = focal_loss + rec_loss
         loss_discriminator.backward()
         optimizer_D.step()
         
@@ -80,13 +92,12 @@ def train(
         noise_batch[:, :params_dim] = params
         # 生成
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
-        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)
-        fake_outputs, fake_low_res_maps = fake_outputs[0], fake_outputs[1:]
+        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)[0]
         fake_label = torch.ones((batch_size, 1), device=device)
         
-        # パラメータ更新
+        # Loss計算とパラメータ更新
         optimizer_G.zero_grad()
-        loss_generator = loss_G(fake_outputs, fake_label)
+        loss_generator = focal_loss_func(fake_outputs, fake_label)
         loss_generator.backward()
         optimizer_G.step()
         
@@ -96,6 +107,10 @@ def train(
             global_step = int(((epoch-1)+(i/max_step))*1000)
             summary_writer.add_scalar(
                 "train/Loss_G", loss_generator, global_step)
+            summary_writer.add_scalar(
+                "train/Loss_D_reconstruction", rec_loss, global_step)
+            summary_writer.add_scalar(
+                "train/Loss_D_focal", focal_loss, global_step)
             summary_writer.add_scalar(
                 "train/Loss_D", loss_discriminator, global_step)
     print(f"{epoch=} : loss_generator={loss_sum_G/max_step}, loss_discriminator={loss_sum_D/max_step}")
@@ -174,7 +189,7 @@ def train_loop():
     print(f'Use {device=}')
     
     # dataset path
-    dir_path = 'dataset/Maps_IllustrisTNG_LH_z=0.00'
+    dir_path = 'dataset/normalization/Maps_IllustrisTNG_LH_z=0.00'
     
     # output path   
     output_dir = f'experiment_results/{time_stamp}'
@@ -187,7 +202,7 @@ def train_loop():
     test_index_set = index_set[11500:15000]
 
     # train configs
-    batch_size = 200
+    batch_size = 100
     max_epoch = 300
     val_inerval = 10
     checkpoint_interval = 10

@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.tensorboard import SummaryWriter
 import model
+import loss
+import dataset
+import torchvision
 
 def display_maps_test():
     out_dir = pathlib.Path("dump/")
@@ -62,12 +65,7 @@ def tensorboard_test():
 def hist_map(map_data:np.ndarray)->Tuple[np.ndarray]:
     return np.histogram(map_data,)
 
-if __name__ == '__main__':
-    print('playground')
-    # tensorboard_test()
-    # display_maps_test()
-    # map_counter()
-    
+def データの統計量を計算():
     # data = utils.load_from_pickle('dataset/Maps_IllustrisTNG_LH_z=0.00/0.pkl')
     # mgas = data['Mgas']
     # hi = data['HI']
@@ -104,3 +102,63 @@ if __name__ == '__main__':
         data_var = np.var(data_maps)
         print(f'\t{data_mean=}, {data_var=}')
         print(f'\t{data_min=}, {data_max=}')
+
+def lossの挙動を確認したい():
+
+    dir_path = 'dataset/normalization/Maps_IllustrisTNG_LH_z=0.00'
+    cmd = dataset.CAMELSMultifieldDataset(
+        dir_path=dir_path,
+        ids=list(range(15000)),
+    )
+    cmd = torch.utils.data.DataLoader(
+        cmd,
+        batch_size=1, 
+        shuffle=False,
+        num_workers=1,
+    )
+    cmd = iter(cmd)
+
+    gen = model.Generator((256,1,1), (3,256,256))
+    dis = model.Discriminator((3,256,256))
+
+    rec_loss_func = loss.ReconstructionLoss()
+    focal_loss_func = loss.FocalLoss()
+
+    noise = torch.rand((256,1,1))
+
+    batch, params = cmd.__next__()
+    _, params_dim = params.size()
+    params = torch.reshape(params, (-1, params_dim, 1, 1))
+    batch_low_res =  torchvision.transforms.functional.resize(
+        batch, (128, 128))
+
+    ret = dis(batch, batch_low_res)
+    ret, low_res_rec_maps = ret[0], ret[1:]
+
+    print(f'{low_res_rec_maps[0].max()=}')
+    print(f'{low_res_rec_maps[0].min()=}')
+    print(f'{batch_low_res.max()=}')
+    print(f'{batch_low_res.min()=}')
+
+    rec_loss = 0
+    rec_loss += rec_loss_func(low_res_rec_maps[0], batch_low_res)
+    rec_loss += rec_loss_func(low_res_rec_maps[1], batch_low_res)
+    rec_loss += rec_loss_func(low_res_rec_maps[2], batch_low_res)
+    rec_loss /= 3
+    print(f'{rec_loss=}')
+    focal_loss = focal_loss_func(ret, torch.ones_like(ret))
+    print(f'{focal_loss=}')
+
+    # hi_res, low_res = gen(noise)
+    # ret = dis(hi_res, low_res)
+    # ret, low_res_rec_maps = ret[0], ret[1:]
+    
+
+if __name__ == '__main__':
+    print('playground')
+    # tensorboard_test()
+    # display_maps_test()
+    # map_counter()
+    # データの統計量を計算()
+
+    lossの挙動を確認したい()
