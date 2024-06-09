@@ -118,13 +118,12 @@ def lossの挙動を確認したい():
     )
     cmd = iter(cmd)
 
-    gen = model.Generator((256,1,1), (3,256,256))
+
     dis = model.Discriminator((3,256,256))
 
     rec_loss_func = loss.ReconstructionLoss()
     focal_loss_func = loss.FocalLoss()
 
-    noise = torch.rand((256,1,1))
 
     batch, params = cmd.__next__()
     _, params_dim = params.size()
@@ -149,6 +148,8 @@ def lossの挙動を確認したい():
     focal_loss = focal_loss_func(ret, torch.ones_like(ret))
     print(f'{focal_loss=}')
 
+    # gen = model.Generator((256,1,1), (3,256,256))
+    # noise = torch.rand((256,1,1))
     # hi_res, low_res = gen(noise)
     # ret = dis(hi_res, low_res)
     # ret, low_res_rec_maps = ret[0], ret[1:]

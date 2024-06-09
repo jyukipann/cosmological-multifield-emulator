@@ -165,3 +165,4 @@ cython_debug/
 /dump
 memo.md
 experiment_results/*/events.out.tfevents.*
+train_log.out

@@ -199,7 +199,7 @@ if __name__ == '__main__':
 ## 実験
 ### 学習時コマンド
 ```bash
-nohup python src/train.py > train_log.out
+nohup python src/train.py > train_log.out &
 ```
 
 
