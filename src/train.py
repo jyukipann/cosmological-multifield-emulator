@@ -18,7 +18,6 @@ import loss
 def train(
         dataloader, 
         generator, discriminator, 
-        loss_G, loss_D, 
         optimizer_G, optimizer_D, 
         epoch, device, summary_writer:SummaryWriter=None):
     
@@ -52,8 +51,8 @@ def train(
         # Label Smoothing
         real_label *=  0.9
         
-        # 画像生成用のノイズ生成
-        noise_batch = torch.rand(noise_shape).to(device)
+        # 画像生成用のノイズ生成 正規分布
+        noise_batch = torch.randn(noise_shape).to(device)
         # paramsを生成用ノイズに混入
         noise_batch[:, :params_dim] = params
         # 生成
@@ -86,8 +85,8 @@ def train(
         optimizer_D.step()
         
         # Generator
-        # 画像生成用のノイズ生成
-        noise_batch = torch.rand(noise_shape).to(device)
+        # 画像生成用のノイズ生成 正規分布
+        noise_batch = torch.randn(noise_shape).to(device)
         # paramsを生成用ノイズに混入
         noise_batch[:, :params_dim] = params
         # 生成

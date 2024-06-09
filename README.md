@@ -210,6 +210,18 @@ nohup python src/train.py > train_log.out &
 そのため、今後は学習安定化のための施策が必要であると考える。例えば、BatchNormalizeや入力値の正規化[-1, 1]などである。  
 他にもGANを用いる際によく用いられる手法を組み込むことで安定化させたい。
 
+## 学習安定化のためのTipsの実装
+### Label Smoothing
+
+
+### 識別器の入力と生成器の出力を[-1, 1]に正規化
+
+
+### 生成器の生成元となるノイズを一様分布ではなく正規分布
+
+
+
+
 ## 参考文献リスト
 - [PytorchでGANを実装してみた。](https://qiita.com/keiji_dl/items/45a5775a361151f9189d)をベースに実装すると素早く実装を終えられそう。
 - [CMD 公式実装サンプル(Colab)](https://colab.research.google.com/drive/1bT1OXxEPi2IaFs7sJn96M7scFtiKLygj?usp=sharing)
