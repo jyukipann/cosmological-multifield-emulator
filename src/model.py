@@ -159,9 +159,8 @@ class Discriminator(nn.Module):
         self.decoder_high_8 = SimpleDecoder(channels[4])
         self.decoder_high_16 = SimpleDecoder(channels[3])
         self.decoder_low = SimpleDecoder(channels[4])
-            
-        
-    def forward(self, high_res, low_res):
+    
+    def feature_extract(self, high_res, low_res):
         feat128 = self.downconv128(high_res)
         feat128 = self.leakyrelu(feat128)
 
@@ -185,13 +184,21 @@ class Discriminator(nn.Module):
         feat5_low_res = self.convolution_low_5(feat8_low_res)
 
         x = torch.cat((feat5_high_res, feat5_low_res), -1)
-        x = self.linear(x)
 
+        return x, feat8, feat16, feat8_low_res
+    
+    def decode_maps(self, feat8, feat16, feat8_low_res):
         deco_high_8 = self.decoder_high_8(feat8)
         deco_high_16 = self.decoder_high_16(feat16)
         deco_low_8 = self.decoder_low(feat8_low_res)
-
-        return x, deco_high_8, deco_high_16, deco_low_8
+        return deco_high_8, deco_high_16, deco_low_8
+        
+    def forward(self, high_res, low_res):
+        x = self.feature_extract(high_res, low_res)
+        x, feats = x[0], x[1:]
+        low_res_maps = self.decode_maps(*feats)
+        x = self.linear(x)
+        return x, *low_res_maps
 
 
 class SimpleDecoder(nn.Module):
@@ -233,6 +240,24 @@ def upBlock(in_channel, out_channel):
     )
     return block
 
+class SANDiscriminator(Discriminator):
+    def __init__(self, *args, **kwargs):
+        super(SANDiscriminator, self).__init__(*args, **kwargs)
+        dim_feat = 50
+        self.omega = nn.Parameter(torch.rand((1, dim_feat)))
+        del self.linear
+
+    def forward(self, high_res, low_res):
+        x = self.feature_extract(high_res, low_res)
+        x, feats = x[0], x[1:]
+        low_res_maps = self.decode_maps(*feats)
+        direction = nn.functional.normalize(self.omegam,  dim=1)
+        scale = torch.norm(self.omegam, dim=1).unsqueeze(1)
+        h_feature = h_feature * scale
+        out_fun = (h_feature * direction.detach()).sum(dim=1)
+        out_dir = (h_feature.detach() * direction).sum(dim=1)
+        x = dict(fun=out_fun, dir=out_dir)
+        return x, *low_res_maps
 
 if __name__ == '__main__':
     import torch
