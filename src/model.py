@@ -251,11 +251,11 @@ class SANDiscriminator(Discriminator):
         x = self.feature_extract(high_res, low_res)
         x, feats = x[0], x[1:]
         low_res_maps = self.decode_maps(*feats)
-        direction = nn.functional.normalize(self.omegam,  dim=1)
-        scale = torch.norm(self.omegam, dim=1).unsqueeze(1)
-        h_feature = h_feature * scale
-        out_fun = (h_feature * direction.detach()).sum(dim=1)
-        out_dir = (h_feature.detach() * direction).sum(dim=1)
+        direction = nn.functional.normalize(self.omega,  dim=1)
+        scale = torch.norm(self.omega, dim=1).unsqueeze(1)
+        x = x * scale
+        out_fun = (x * direction.detach()).sum(dim=1)
+        out_dir = (x.detach() * direction).sum(dim=1)
         x = dict(fun=out_fun, dir=out_dir)
         return x, *low_res_maps
 
@@ -284,16 +284,26 @@ if __name__ == '__main__':
     # )
 
 
-    d = Discriminator(output_map_shape[1:]).eval()
-    d = torch.jit.trace(d, (high_res, low_res))
-    print(d)
+    # d = Discriminator(output_map_shape[1:]).eval()
+    # d = torch.jit.trace(d, (high_res, low_res))
+    # print(d)
     
-    ret = d(high_res, low_res)
+    # ret = d(high_res, low_res)
+    # ret, low_res_maps = ret[0], ret[1:]
+
+    # print(ret.size())
+    # print(low_res_maps[0].size())
+    # print(low_res_maps[1].size())
+    # print(low_res_maps[2].size())
+
+    d_san = SANDiscriminator(output_map_shape[1:]).eval()
+    d_san = torch.jit.trace(d_san, (high_res, low_res))
+    print(d_san)
+    
+    ret = d_san(high_res, low_res)
     ret, low_res_maps = ret[0], ret[1:]
 
     print(ret.size())
     print(low_res_maps[0].size())
     print(low_res_maps[1].size())
     print(low_res_maps[2].size())
-
-    
