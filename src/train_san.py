@@ -27,6 +27,7 @@ def train(
     rec_loss_func = loss.ReconstructionLoss()
     wasserstein_loss_func = loss.WassersteinLoss()
     hinge_loss_func = loss.HingeLoss()
+    losses = dict()
     for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"train epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
         batch:torch.tensor = batch.to(device)
@@ -82,6 +83,15 @@ def train(
 
         loss_discriminator = loss_discriminator_real + loss_discriminator_fake
         loss_discriminator.backward()
+
+        losses['train/rec_loss'] = rec_loss
+        losses['train/hinge_loss_real'] = hinge_loss_real
+        losses['train/wasserstein_loss_real'] = wasserstein_loss_real
+        losses['train/loss_discriminator_real'] = loss_discriminator_real
+        losses['train/hinge_loss_fake'] = hinge_loss_fake
+        losses['train/wasserstein_loss_fake'] = wasserstein_loss_fake
+        losses['train/loss_discriminator_fake'] = loss_discriminator_fake
+        losses['train/loss_discriminator'] = loss_discriminator
         optimizer_D.step()
         
         # Generator
@@ -91,27 +101,23 @@ def train(
         noise_batch[:, :params_dim] = params
         # 生成
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
-        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)[0]
-        fake_label = torch.ones((batch_size, 1), device=device)
+        ret = discriminator(fake_inputs, low_res_fake_inputs)
+        fake_outputs, fake_low_res_maps = ret[0], ret[1:-2]
+        fake_feature, fake_direction = ret[-2], ret[-1]
         
         # Loss計算とパラメータ更新
         optimizer_G.zero_grad()
-        loss_generator = focal_loss_func(fake_outputs, fake_label)
+        loss_generator = -fake_outputs.mean()
         loss_generator.backward()
+        losses['train/loss_generator'] = loss_generator
         optimizer_G.step()
         
         loss_sum_D += loss_discriminator
         loss_sum_G += loss_generator
         if summary_writer is not None:
             global_step = int(((epoch-1)+(i/max_step))*1000)
-            summary_writer.add_scalar(
-                "train/Loss_G", loss_generator, global_step)
-            summary_writer.add_scalar(
-                "train/Loss_D_reconstruction", rec_loss, global_step)
-            summary_writer.add_scalar(
-                "train/Loss_D_focal", focal_loss, global_step)
-            summary_writer.add_scalar(
-                "train/Loss_D", loss_discriminator, global_step)
+            for k, v in losses.items():
+                summary_writer.add_scalar(k, v, global_step)
     print(f"{epoch=} : loss_generator={loss_sum_G/max_step}, loss_discriminator={loss_sum_D/max_step}")
 
 
