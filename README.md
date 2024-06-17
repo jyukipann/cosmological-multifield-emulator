@@ -221,16 +221,16 @@ sigmoidよりもtanhのほうが原点を含む分，分布として安定する
 生成器に入力するノイズを正規分布にする．いいらしい．
 
 ## 論文を読んで、Loss関数に関する実装を追う
+<details>
+  <summary>vscode向け数式表示スクリプト</summary>
+  <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax:{inlineMath:[['$','$']],displayMath:[['$$','$$'],["\\[","\\]"]]}});</script>
+</details>
+
 ### 識別器のLoss
 
 ### 生成器のLoss
 
-<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-<script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax:{inlineMath:[['$','$']],displayMath:[['$$','$$'],["\\[","\\]"]]}});</script>
-$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
-```math
-\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
-```
 
 ## 参考文献リスト
 - [PytorchでGANを実装してみた。](https://qiita.com/keiji_dl/items/45a5775a361151f9189d)をベースに実装すると素早く実装を終えられそう。
