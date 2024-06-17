@@ -225,7 +225,9 @@ sigmoidよりもtanhのほうが原点を含む分，分布として安定する
 
 ### 生成器のLoss
 
-
+```math
+\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+```
 
 ## 参考文献リスト
 - [PytorchでGANを実装してみた。](https://qiita.com/keiji_dl/items/45a5775a361151f9189d)をベースに実装すると素早く実装を終えられそう。
