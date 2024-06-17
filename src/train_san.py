@@ -7,7 +7,7 @@ import torchvision.transforms.functional
 import torchvision
 from torcheval.metrics import BinaryAccuracy
 from torch.utils.tensorboard import SummaryWriter
-from model import Generator, Discriminator
+from model import Generator, SANDiscriminator
 import dataset
 import utils
 import loss
@@ -25,7 +25,8 @@ def train(
     loss_sum_D = 0
     loss_sum_G = 0
     rec_loss_func = loss.ReconstructionLoss()
-    focal_loss_func = loss.FocalLoss()
+    wasserstein_loss_func = loss.WassersteinLoss()
+    hinge_loss_func = loss.HingeLoss()
     for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"train epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
         batch:torch.tensor = batch.to(device)
@@ -43,13 +44,9 @@ def train(
         discriminator = discriminator.to(device).train()
         
         # Discriminator
-        real_outputs = discriminator(batch, batch_low_res)
-        real_outputs, real_low_res_maps = real_outputs[0], real_outputs[1:]
-
-        # Discriminator学習のための正解の生成
-        real_label = torch.ones((batch_size, 1)).to(device)
-        # Label Smoothing
-        real_label *=  0.9
+        ret = discriminator(batch, batch_low_res)
+        real_outputs, real_low_res_maps = ret[0], ret[1:-2]
+        real_feature, real_direction = ret[-2], ret[-1]
         
         # 画像生成用のノイズ生成 正規分布
         noise_batch = torch.randn(noise_shape).to(device)
@@ -57,16 +54,9 @@ def train(
         noise_batch[:, :params_dim] = params
         # 生成
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
-        fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)[0]
-
-        # Discriminator学習のための正解の生成
-        fake_label = torch.ones((batch_size, 1), device=device)
-        # Label Smoothing
-        fake_label *= 0.1
-        
-        # バッチに混ぜるのは良くないとも聞くのでバラでbackward()を二回するのはあり
-        # outputs = torch.cat((real_outputs, fake_outputs), dim=-1)
-        # labels = torch.cat((real_label, fake_label), dim=-1)
+        ret = discriminator(fake_inputs, low_res_fake_inputs)
+        fake_outputs, fake_low_res_maps = ret[0], ret[1:-2]
+        fake_feature, fake_direction = ret[-2], ret[-1]
 
         # Loss計算とパラメータ更新
         optimizer_D.zero_grad()
@@ -75,12 +65,22 @@ def train(
         rec_loss += rec_loss_func(real_low_res_maps[1], batch_low_res)
         rec_loss += rec_loss_func(real_low_res_maps[2], batch_low_res)
         rec_loss /= 3
-        
-        focal_loss = focal_loss_func(real_outputs, real_label)
-        focal_loss += focal_loss_func(fake_outputs, fake_label)
-        focal_loss /= 2
 
-        loss_discriminator = focal_loss + rec_loss
+        hinge_loss_real = hinge_loss_func(
+            real_feature, is_fake = False)
+        wasserstein_loss_real = wasserstein_loss_func(
+            real_direction, is_fake = False)
+        
+        loss_discriminator_real = rec_loss + hinge_loss_real + wasserstein_loss_real
+
+        hinge_loss_fake = hinge_loss_func(
+            fake_feature, is_fake = True)
+        wasserstein_loss_fake = wasserstein_loss_func(
+            fake_direction, is_fake = True)
+        
+        loss_discriminator_fake = hinge_loss_fake + wasserstein_loss_fake
+
+        loss_discriminator = loss_discriminator_real + loss_discriminator_fake
         loss_discriminator.backward()
         optimizer_D.step()
         
@@ -135,7 +135,7 @@ def val(
             batch, (128, 128))
         
         generator:Generator = generator.to(device).eval()
-        discriminator:Discriminator = discriminator.to(device).eval()
+        discriminator:SANDiscriminator = discriminator.to(device).eval()
         
         # ノイズ生成
         noise_batch = torch.rand(noise_shape).to(device)
@@ -231,7 +231,7 @@ def train_loop():
 
     # Model
     generator = Generator((256, 1, 1), (3, 256, 256))
-    discriminator = Discriminator((3, 256, 256))
+    discriminator = SANDiscriminator((3, 256, 256))
 
     # Optimizer
     optimizer_D = torch.optim.Adam(
@@ -269,7 +269,7 @@ def train_loop():
             if epoch % checkpoint_interval == 0:
                 # save models
                 g_name = str(output_dir/f'generator_checkpoint_{epoch}epoch.pth')
-                d_name = str(output_dir/f'discriminator_checkpoint_{epoch}epoch.pth')
+                d_name = str(output_dir/f'discriminator_san_checkpoint_{epoch}epoch.pth')
                 torch.save(generator, g_name)
                 torch.save(discriminator, d_name)
                 print(f"model saved: {g_name}")
@@ -277,7 +277,7 @@ def train_loop():
 
     # save models
     g_name = str(output_dir/f'generator.pth')
-    d_name = str(output_dir/f'discriminator.pth')
+    d_name = str(output_dir/f'discriminator_san.pth')
     torch.save(generator, g_name)
     torch.save(discriminator, d_name)
     print(f"model saved: {g_name}")

@@ -256,8 +256,8 @@ class SANDiscriminator(Discriminator):
         x = x * scale
         out_fun = (x * direction.detach()).sum(dim=1)
         out_dir = (x.detach() * direction).sum(dim=1)
-        x = dict(fun=out_fun, dir=out_dir)
-        return x, *low_res_maps
+        x = (x * direction).sum(dim=1)
+        return x, *low_res_maps, out_fun, out_dir
 
 if __name__ == '__main__':
     import torch
