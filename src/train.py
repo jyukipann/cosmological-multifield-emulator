@@ -83,6 +83,18 @@ def train(
         loss_discriminator = focal_loss + rec_loss
         loss_discriminator.backward()
         optimizer_D.step()
+
+
+        # Wasserstain loss
+        # 上記のloss計算とこのloss計算はどっちかだけ使う
+        gradient_penalty = 0.1  # 仮
+        lambda_gp = 10          # 仮
+        lossD_r = torch.mean(real_outputs)  # real loss
+        lossD_f = torch.mean(fake_outputs)  # fake loss
+        lossD = -lossD_r + lossD_f + gradient_penalty * lambda_gp
+        lossD.backward()
+        optimizer_D.step()
+
         
         # Generator
         # 画像生成用のノイズ生成 正規分布
