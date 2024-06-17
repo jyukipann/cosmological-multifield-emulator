@@ -246,6 +246,7 @@ class SANDiscriminator(Discriminator):
         dim_feat = 50
         self.omega = nn.Parameter(torch.rand((1, dim_feat)))
         del self.linear
+        
 
     def forward(self, high_res, low_res):
         x = self.feature_extract(high_res, low_res)
