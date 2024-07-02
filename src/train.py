@@ -233,10 +233,6 @@ def train_loop():
     generator = Generator((256, 1, 1), (3, 256, 256))
     discriminator = Discriminator((3, 256, 256))
 
-    # Loss
-    loss_D = torchvision.ops.focal_loss.sigmoid_focal_loss
-    loss_G = torch.nn.HuberLoss()
-
     # Optimizer
     optimizer_D = torch.optim.Adam(
         discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
@@ -259,7 +255,6 @@ def train_loop():
             train(
                 dataloader_train, 
                 generator, discriminator, 
-                loss_G, loss_D, 
                 optimizer_G, optimizer_D, 
                 epoch, device,
                 summary_writer=writer)
