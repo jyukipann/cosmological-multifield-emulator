@@ -166,3 +166,5 @@ cython_debug/
 memo.md
 experiment_results/*/events.out.tfevents.*
 train_log.out
+/dataset/CelebA
+pre_experiment/*/events*
