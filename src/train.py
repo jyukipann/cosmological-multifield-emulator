@@ -19,15 +19,20 @@ def train(
         dataloader, 
         generator, discriminator, 
         optimizer_G, optimizer_D, 
-        epoch, device, summary_writer:SummaryWriter=None):
+        epoch, device, noise_weight_rate, summary_writer:SummaryWriter=None):
     
     max_step = len(dataloader)
     loss_sum_D = 0
     loss_sum_G = 0
     rec_loss_func = loss.ReconstructionLoss()
     focal_loss_func = loss.FocalLoss()
+
     for i, (batch, params) in tqdm.tqdm(enumerate(dataloader), desc=f"train epoch {epoch}", total=max_step):
         batch_size = batch.shape[0]
+
+        # batchにノイズを付加する
+        batch = (1 - noise_weight_rate)*batch + noise_weight_rate*torch.randn_like(batch)
+
         batch:torch.tensor = batch.to(device)
         params:torch.tensor = params.to(device)
         _, params_dim = params.size()
@@ -57,6 +62,10 @@ def train(
         noise_batch[:, :params_dim] = params
         # 生成
         fake_inputs, low_res_fake_inputs = generator(noise_batch)
+
+        # fake_inputsにノイズを付加
+        fake_inputs = (1 - noise_weight_rate)*fake_inputs + noise_weight_rate*torch.randn_like(fake_inputs)
+
         fake_outputs = discriminator(fake_inputs, low_res_fake_inputs)[0]
 
         # Discriminator学習のための正解の生成
@@ -251,17 +260,22 @@ def train_loop():
         log_dir = '..' / log_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    max_noise = 0.5 # 50%
+    noise_rate = max_noise / (max_epoch-1)
+
     # open SummaryWriter
     print(f"Log Dir {log_dir}")
     with SummaryWriter(log_dir) as writer:
         # Train loop
         for epoch in range(1, max_epoch+1):
+            # discriminatorに渡す画像の重みの計算
+            noise_weight_rate = max_noise - (noise_rate*(epoch - 1))
             train(
                 dataloader_train, 
                 generator, discriminator, 
                 loss_G, loss_D, 
                 optimizer_G, optimizer_D, 
-                epoch, device,
+                epoch, device, noise_weight_rate, 
                 summary_writer=writer)
             # val interval
             if epoch % val_inerval == 0:
