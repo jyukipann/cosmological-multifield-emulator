@@ -260,7 +260,7 @@ def train_loop():
         log_dir = '..' / log_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    max_noise = 0.5 # 50%
+    max_noise = 0.8 # 50%
     noise_rate = max_noise / (max_epoch-1)
 
     # open SummaryWriter
