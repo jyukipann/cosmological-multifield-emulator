@@ -189,6 +189,12 @@ def val(
         summary_writer.add_image("val/mgas_hi_b", mgas_hi_b, epoch)
     print(f"{accuracy=}")
 
+def noise_schedule(epoch, coffitent, half_epoch, cutoff_epoch=None)->float:
+    if cutoff_epoch >= epoch:
+        return 1/(1+torch.e**(coffitent*(epoch-half_epoch)))
+    return 0
+
+
 def train_loop():
     time_stamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     
@@ -196,7 +202,7 @@ def train_loop():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'Use {device=}')
     
-    # dataset path
+    # dataset pathoutput_dir/f
     dir_path = 'dataset/normalization/Maps_IllustrisTNG_LH_z=0.00'
     
     # output path   
@@ -265,8 +271,9 @@ def train_loop():
         # Train loop
         for epoch in range(1, max_epoch+1):
             # discriminatorに渡す画像の重みの計算
-            noise_weight_rate = max_noise - (noise_rate*(epoch - 1))
-            train(
+            # noise_weight_rate = max_noise - (noise_rate*(epoch - 1))
+            noise_weight_rate = noise_schedule(epoch, 0.03, 100, 200)
+            train( 
                 dataloader_train, 
                 generator, discriminator, 
                 optimizer_G, optimizer_D, 
