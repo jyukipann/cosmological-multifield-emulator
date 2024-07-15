@@ -97,12 +97,12 @@ def train(
 
         # Wasserstain loss
         # 上記のloss計算とこのloss計算はどっちかだけ使う
-        # gradient_penalty = 0.1  # 仮
-        gradient_penalty = calculate_gradient_penalty(discriminator, batch.data, fake_inputs.data)
+        gradient_penalty = 0  # 仮
+        # gradient_penalty = calculate_gradient_penalty(discriminator, batch.data, fake_inputs.data)
         lambda_gp = 10          # 仮
         
-        lossD_r = torch.mean(torch.minimum(0, -1 + real_outputs))  # real loss
-        lossD_f = torch.mean(torch.minimum(0, -1 - fake_outputs))  # fake loss
+        lossD_r = torch.mean(torch.minimum(torch.zeros_like(real_outputs), -1 + real_outputs))  # real loss
+        lossD_f = torch.mean(torch.minimum(torch.zeros_like(fake_outputs), -1 - fake_outputs))  # fake loss
         loss_discriminator = -lossD_r - lossD_f + rec_loss
         loss_discriminator += gradient_penalty * lambda_gp
         loss_discriminator.backward()
@@ -121,7 +121,7 @@ def train(
         # Loss計算とパラメータ更新
         optimizer_G.zero_grad()
         # loss_generator = focal_loss_func(fake_outputs, fake_label)
-        loss_generator = -fake_outputs
+        loss_generator = -torch.mean(fake_outputs)
         loss_generator.backward()
         optimizer_G.step()
         
