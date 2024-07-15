@@ -81,19 +81,18 @@ def train(
 
         # Loss計算とパラメータ更新
         optimizer_D.zero_grad()
-        rec_loss = 0
-        rec_loss += rec_loss_func(real_low_res_maps[0], batch_low_res)
-        rec_loss += rec_loss_func(real_low_res_maps[1], batch_low_res)
-        rec_loss += rec_loss_func(real_low_res_maps[2], batch_low_res)
-        rec_loss /= 3
+        # もとのロス        
+        # rec_loss = 0
+        # rec_loss += rec_loss_func(real_low_res_maps[0], batch_low_res)
+        # rec_loss += rec_loss_func(real_low_res_maps[1], batch_low_res)
+        # rec_loss += rec_loss_func(real_low_res_maps[2], batch_low_res)
+        # rec_loss /= 3
         
-        focal_loss = focal_loss_func(real_outputs, real_label)
-        focal_loss += focal_loss_func(fake_outputs, fake_label)
-        focal_loss /= 2
+        # focal_loss = focal_loss_func(real_outputs, real_label)
+        # focal_loss += focal_loss_func(fake_outputs, fake_label)
+        # focal_loss /= 2
 
-        loss_discriminator = focal_loss + rec_loss
-        loss_discriminator.backward()
-        optimizer_D.step()
+        # loss_discriminator = focal_loss + rec_loss
 
 
         # Wasserstain loss
@@ -129,10 +128,10 @@ def train(
             global_step = int(((epoch-1)+(i/max_step))*1000)
             summary_writer.add_scalar(
                 "train/Loss_G", loss_generator, global_step)
-            summary_writer.add_scalar(
-                "train/Loss_D_reconstruction", rec_loss, global_step)
-            summary_writer.add_scalar(
-                "train/Loss_D_focal", focal_loss, global_step)
+            # summary_writer.add_scalar(
+            #     "train/Loss_D_reconstruction", rec_loss, global_step)
+            # summary_writer.add_scalar(
+            #     "train/Loss_D_focal", focal_loss, global_step)
             summary_writer.add_scalar(
                 "train/Loss_D", loss_discriminator, global_step)
     print(f"{epoch=} : loss_generator={loss_sum_G/max_step}, loss_discriminator={loss_sum_D/max_step}")
