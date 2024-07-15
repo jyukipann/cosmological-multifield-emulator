@@ -120,7 +120,8 @@ def train(
         
         # Loss計算とパラメータ更新
         optimizer_G.zero_grad()
-        loss_generator = focal_loss_func(fake_outputs, fake_label)
+        # loss_generator = focal_loss_func(fake_outputs, fake_label)
+        loss_generator = -fake_outputs
         loss_generator.backward()
         optimizer_G.step()
         
