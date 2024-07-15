@@ -16,7 +16,8 @@ class FocalLoss(nn.Module):
 
     def forward(self, input, target):
         return self.forcal_loss(input, target, reduction='mean')
-    
+
+
 if __name__ == '__main__':
     rec_loss_func = ReconstructionLoss()
     focal_loss_func = FocalLoss()
