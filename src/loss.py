@@ -4,10 +4,13 @@ import torchvision
 class ReconstructionLoss(nn.Module):
     def __init__(self) -> None:
         super(ReconstructionLoss, self).__init__()
-        self.huber_loss = nn.HuberLoss(reduction='mean')
+        # self.huber_loss = nn.HuberLoss(reduction='mean')
+        self.mae_loss = nn.L1Loss(reduction='mean')
 
     def forward(self, input, target):
-        return self.huber_loss(input, target)
+        # return self.huber_loss(input, target)
+        return self.mae_loss(input, target)
+    
 
 class FocalLoss(nn.Module):
     def __init__(self) -> None:
