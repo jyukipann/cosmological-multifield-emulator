@@ -98,7 +98,7 @@ def train(
         # Wasserstein loss
         # 上記のloss計算とこのloss計算はどっちかだけ使う
         gradient_penalty = 0  # 仮
-        # gradient_penalty = calculate_gradient_penalty(discriminator, batch.data, fake_inputs.data)
+        # gradient_penalty = calculate_gradient_penalty(discriminator, batch.data, fake_inputs.data, device)
         lambda_gp = 10          # 仮
         
         lossD_r = torch.mean(torch.minimum(torch.zeros_like(real_outputs), -1 + real_outputs))  # real loss
@@ -212,13 +212,13 @@ def noise_schedule(epoch, coffitent, half_epoch, cutoff_epoch=None)->float:
         return 1/(1+torch.e**(coffitent*(epoch-half_epoch)))
     return 0
 
-def calculate_gradient_penalty(D, real_img, fake_img):
+def calculate_gradient_penalty(D, real_img, fake_img, device):
     """Calculates the gradient penalty loss for WGAN GP"""
     # Random weight term for interpolation between real and fake samples
-    alpha = torch.Tensor(np.random.random((real_img.size(0), 1, 1, 1)))
+    alpha = torch.Tensor(np.random.random((real_img.size(0), 1, 1, 1))).to(device)
     # Get random interpolation between real and fake samples
     interpolates = (alpha * real_img + ((1 - alpha) * fake_img)).requires_grad_(True)
-    d_interpolates = D(interpolates)
+    d_interpolates, _, _, _ = D(interpolates)
     fake = torch.autograd.Variable(torch.Tensor(real_img.shape[0], 1).fill_(1.0), requires_grad=False)
     # Get gradient w.r.t. interpolates
     gradients = torch.autograd.grad(
