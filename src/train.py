@@ -97,7 +97,6 @@ def train(
         loss_discriminator = -lossD_r + lossD_f + gradient_penalty * lambda_gp
         loss_discriminator.backward()
         optimizer_D.step()
-
         
         # Generator
         # 画像生成用のノイズ生成 正規分布
