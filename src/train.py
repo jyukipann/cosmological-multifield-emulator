@@ -82,11 +82,11 @@ def train(
         # Loss計算とパラメータ更新
         optimizer_D.zero_grad()
         # もとのロス        
-        # rec_loss = 0
-        # rec_loss += rec_loss_func(real_low_res_maps[0], batch_low_res)
-        # rec_loss += rec_loss_func(real_low_res_maps[1], batch_low_res)
-        # rec_loss += rec_loss_func(real_low_res_maps[2], batch_low_res)
-        # rec_loss /= 3
+        rec_loss = 0
+        rec_loss += rec_loss_func(real_low_res_maps[0], batch_low_res)
+        rec_loss += rec_loss_func(real_low_res_maps[1], batch_low_res)
+        rec_loss += rec_loss_func(real_low_res_maps[2], batch_low_res)
+        rec_loss /= 3
         
         # focal_loss = focal_loss_func(real_outputs, real_label)
         # focal_loss += focal_loss_func(fake_outputs, fake_label)
@@ -100,9 +100,11 @@ def train(
         # gradient_penalty = 0.1  # 仮
         gradient_penalty = calculate_gradient_penalty(discriminator, batch.data, fake_inputs.data)
         lambda_gp = 10          # 仮
-        lossD_r = torch.mean(real_outputs)  # real loss
-        lossD_f = torch.mean(fake_outputs)  # fake loss
-        loss_discriminator = -lossD_r + lossD_f + gradient_penalty * lambda_gp
+        
+        lossD_r = torch.mean(torch.minimum(0, -1 + real_outputs))  # real loss
+        lossD_f = torch.mean(torch.minimum(0, -1 - fake_outputs))  # fake loss
+        loss_discriminator = -lossD_r - lossD_f + rec_loss
+        loss_discriminator += gradient_penalty * lambda_gp
         loss_discriminator.backward()
         optimizer_D.step()
         
@@ -257,25 +259,36 @@ def train_loop():
     lr = 0.0001
 
 
-    import torchvision.transforms as transforms
-    image_size = (256,256)
-    transform = transforms.Compose([
-        transforms.Resize(image_size),
-        transforms.CenterCrop(image_size),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-    ])
-    dataset_train = torchvision.datasets.CelebA(
-        root='dataset/CelebA', split='train', transform=transform, download=True)
-    dataset_valid = torchvision.datasets.CelebA(
-        root='dataset/CelebA', split='valid', transform=transform, download=True)
-    dataset_test = torchvision.datasets.CelebA(
-        root='dataset/CelebA', split='test',  transform=transform, download=True)
+    # import torchvision.transforms as transforms
+    # image_size = (256,256)
+    # transform = transforms.Compose([
+    #     transforms.Resize(image_size),
+    #     transforms.CenterCrop(image_size),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    # ])
+    # dataset_train = torchvision.datasets.CelebA(
+    #     root='dataset/CelebA', split='train', transform=transform, download=True)
+    # dataset_valid = torchvision.datasets.CelebA(
+    #     root='dataset/CelebA', split='valid', transform=transform, download=True)
+    # dataset_test = torchvision.datasets.CelebA(
+    #     root='dataset/CelebA', split='test',  transform=transform, download=True)
     
+        # split dataset
+    index_set = list(range(15000))
+    train_index_set = index_set[:10000]
+    val_index_set = index_set[10000:11500]
+    test_index_set = index_set[11500:15000]
+
+    # データセットとデータローダーのインスタンス化
+    cmd_train = dataset.CAMELSMultifieldDataset(
+        dir_path=dir_path,
+        ids=train_index_set,
+    )
     
     dataloader_train = torch.utils.data.DataLoader(
-        # cmd_train,
-        dataset_train,
+        cmd_train,
+        # dataset_train,
         batch_size=batch_size, 
         shuffle=True,
         num_workers=4
