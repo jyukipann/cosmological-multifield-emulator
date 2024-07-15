@@ -139,7 +139,6 @@ def train(
                 "train/Loss_D", loss_discriminator, global_step)
     print(f"{epoch=} : loss_generator={loss_sum_G/max_step}, loss_discriminator={loss_sum_D/max_step}")
 
-
 def val(
         dataloader, 
         generator, discriminator, 
