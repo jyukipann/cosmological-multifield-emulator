@@ -95,7 +95,7 @@ def train(
         # loss_discriminator = focal_loss + rec_loss
 
 
-        # Wasserstain loss
+        # Wasserstein loss
         # 上記のloss計算とこのloss計算はどっちかだけ使う
         gradient_penalty = 0  # 仮
         # gradient_penalty = calculate_gradient_penalty(discriminator, batch.data, fake_inputs.data)
@@ -104,6 +104,7 @@ def train(
         lossD_r = torch.mean(torch.minimum(torch.zeros_like(real_outputs), -1 + real_outputs))  # real loss
         lossD_f = torch.mean(torch.minimum(torch.zeros_like(fake_outputs), -1 - fake_outputs))  # fake loss
         loss_discriminator = -lossD_r - lossD_f + rec_loss
+        wasserstein = loss_discriminator
         loss_discriminator += gradient_penalty * lambda_gp
         loss_discriminator.backward()
         optimizer_D.step()
@@ -131,8 +132,10 @@ def train(
             global_step = int(((epoch-1)+(i/max_step))*1000)
             summary_writer.add_scalar(
                 "train/Loss_G", loss_generator, global_step)
-            # summary_writer.add_scalar(
-            #     "train/Loss_D_reconstruction", rec_loss, global_step)
+            summary_writer.add_scalar(
+                "train/Loss_D_wasserstein", wasserstein, global_step)
+            summary_writer.add_scalar(
+                "train/Loss_D_reconstruction", rec_loss, global_step)
             # summary_writer.add_scalar(
             #     "train/Loss_D_focal", focal_loss, global_step)
             summary_writer.add_scalar(
