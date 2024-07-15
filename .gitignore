@@ -168,3 +168,4 @@ experiment_results/*/events.out.tfevents.*
 train_log.out
 /dataset/CelebA
 pre_experiment/*/events*
+nohup.out
