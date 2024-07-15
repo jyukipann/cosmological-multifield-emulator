@@ -222,13 +222,26 @@ def train_loop():
     checkpoint_interval = 10
     lr = 0.0001
 
-    # データセットとデータローダーのインスタンス化
-    cmd_train = dataset.CAMELSMultifieldDataset(
-        dir_path=dir_path,
-        ids=train_index_set,
-    )
+
+    import torchvision.transforms as transforms
+    image_size = (256,256)
+    transform = transforms.Compose([
+        transforms.Resize(image_size),
+        transforms.CenterCrop(image_size),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ])
+    dataset_train = torchvision.datasets.CelebA(
+        root='dataset/CelebA', split='train', transform=transform, download=True)
+    dataset_valid = torchvision.datasets.CelebA(
+        root='dataset/CelebA', split='valid', transform=transform, download=True)
+    dataset_test = torchvision.datasets.CelebA(
+        root='dataset/CelebA', split='test',  transform=transform, download=True)
+    
+    
     dataloader_train = torch.utils.data.DataLoader(
-        cmd_train,
+        # cmd_train,
+        dataset_train,
         batch_size=batch_size, 
         shuffle=True,
         num_workers=4
