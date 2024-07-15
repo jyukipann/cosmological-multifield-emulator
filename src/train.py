@@ -100,6 +100,9 @@ def train(
         gradient_penalty = 0  # 仮
         # gradient_penalty = calculate_gradient_penalty(discriminator, batch.data, fake_inputs.data, device)
         lambda_gp = 10          # 仮
+
+        # print(f"len(batch): {len(batch)}, len(batch.data): {len(batch.data)}, batch.size(0): {batch.size(0)}")
+        # print(f"len(fake_inputs): {len(fake_inputs)}, len(fake_inputs.data): {len(fake_inputs.data)}")
         
         lossD_r = torch.mean(torch.minimum(torch.zeros_like(real_outputs), -1 + real_outputs))  # real loss
         lossD_f = torch.mean(torch.minimum(torch.zeros_like(fake_outputs), -1 - fake_outputs))  # fake loss
@@ -215,22 +218,48 @@ def noise_schedule(epoch, coffitent, half_epoch, cutoff_epoch=None)->float:
 def calculate_gradient_penalty(D, real_img, fake_img, device):
     """Calculates the gradient penalty loss for WGAN GP"""
     # Random weight term for interpolation between real and fake samples
-    alpha = torch.Tensor(np.random.random((real_img.size(0), 1, 1, 1))).to(device)
+    # alpha = torch.Tensor(np.random.random((real_img.size(0), 1, 1, 1))).to(device)
+    # # Get random interpolation between real and fake samples
+    # interpolates = (alpha * real_img + ((1 - alpha) * fake_img)).requires_grad_(True)
+    # d_interpolates, _, _, _ = D(interpolates)
+    # fake = torch.autograd.Variable(torch.Tensor(real_img.shape[0], 1).fill_(1.0), requires_grad=False)
+    # # Get gradient w.r.t. interpolates
+    # gradients = torch.autograd.grad(
+    #     outputs=d_interpolates,
+    #     inputs=interpolates,
+    #     grad_outputs=fake,
+    #     create_graph=True,
+    #     retain_graph=True,
+    #     only_inputs=True,
+    # )[0]
+    # gradients = gradients.view(gradients.size(0), -1)
+    # gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+    # return gradient_penalty
+
+    alpha  = torch.rand(real_img.size(0), 1, 1, 1).to(device)  # (100, 1, 1, 1)
+    
     # Get random interpolation between real and fake samples
-    interpolates = (alpha * real_img + ((1 - alpha) * fake_img)).requires_grad_(True)
-    d_interpolates, _, _, _ = D(interpolates)
-    fake = torch.autograd.Variable(torch.Tensor(real_img.shape[0], 1).fill_(1.0), requires_grad=False)
-    # Get gradient w.r.t. interpolates
+    interpolates = alpha * real_img + (1-alpha) * fake_img
+    interpolates.requires_grad = True
+
+    print(real_img.shape, fake_img.shape, interpolates.shape)
+
+    # Discriminator output for interpolated samples
+    d_interpolates = D(interpolates)
+
+    # Fake labels for interpolated samples (all ones)
+    fake = torch.ones((real_img.size(0), 1), device = device)
+
+    # Calculate gradients w.r.t. interpolated samples
     gradients = torch.autograd.grad(
-        outputs=d_interpolates,
-        inputs=interpolates,
-        grad_outputs=fake,
-        create_graph=True,
-        retain_graph=True,
-        only_inputs=True,
-    )[0]
+        outputs = d_interpolates,
+        inputs = interpolates,
+        grad_outputs = fake,
+        allow_unused = True)[0]
+    
     gradients = gradients.view(gradients.size(0), -1)
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+    
     return gradient_penalty
 
 
