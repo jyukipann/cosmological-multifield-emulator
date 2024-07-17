@@ -96,10 +96,8 @@ def train(
 
 
         # Wasserstein loss
-        # 上記のloss計算とこのloss計算はどっちかだけ使う
-        # gradient_penalty = 0  # 仮
-        gradient_penalty = calculate_gradient_penalty(discriminator, batch, batch_low_res, fake_inputs, low_res_fake_inputs, device)
-        # gradient_penalty = calculate_gradient_penalty(discriminator, batch, fake_inputs, device)
+        gradient_penalty = 0  # 下のかこれか切り替えて使う
+        # gradient_penalty = calculate_gradient_penalty(discriminator, batch, batch_low_res, fake_inputs, low_res_fake_inputs, device)
         lambda_gp = 10          # 仮
 
         lossD_r = torch.mean(torch.minimum(torch.zeros_like(real_outputs), -1 + real_outputs))  # real loss
