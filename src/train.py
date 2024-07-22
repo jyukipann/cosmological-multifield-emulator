@@ -96,8 +96,8 @@ def train(
 
 
         # Wasserstein loss
-        gradient_penalty = 0  # 下のかこれか切り替えて使う
-        # gradient_penalty = calculate_gradient_penalty(discriminator, batch, batch_low_res, fake_inputs, low_res_fake_inputs, device)
+        # gradient_penalty = 0  # 下のかこれか切り替えて使う
+        gradient_penalty = calculate_gradient_penalty(discriminator, batch, batch_low_res, fake_inputs, low_res_fake_inputs, device)
         lambda_gp = 10          # 仮
 
         lossD_r = torch.mean(torch.minimum(torch.zeros_like(real_outputs), -1 + real_outputs))  # real loss
@@ -139,8 +139,8 @@ def train(
             #     "train/Loss_D_focal", focal_loss, global_step)
             summary_writer.add_scalar(
                 "train/Loss_D", loss_discriminator, global_step)
-            summary_writer.add_scalar(
-                "train/gradient_penalty", gradient_penalty, global_step)
+            # summary_writer.add_scalar(
+            #     "train/gradient_penalty", gradient_penalty, global_step)
     print(f"{epoch=} : loss_generator={loss_sum_G/max_step}, loss_discriminator={loss_sum_D/max_step}")
 
 def val(
@@ -219,20 +219,20 @@ def calculate_gradient_penalty(D, real_input, real_low_res, fake_input, fake_low
     alpha  = torch.rand(real_input.size(0), 1, 1, 1).to(device)  # (100, 1, 1, 1)
     
     # Get random interpolation between real and fake samples
-    interpolates = alpha * real_input + (1-alpha) * fake_input
-    interpolates_low_res = alpha * real_low_res + (1-alpha) * fake_low_res
-    # interpolates.requires_grad = True
-    # interpolates_low_res.requires_grad = True
+    interpolates = alpha * real_input.data + (1-alpha) * fake_input.data
+    interpolates_low_res = alpha * real_low_res.data + (1-alpha) * fake_low_res.data
+    interpolates.requires_grad = True
+    interpolates_low_res.requires_grad = True
 
     # Discriminator output for interpolated samples
-    d_interpolates, _, _, _ = D(interpolates, interpolates_low_res)
+    output, _, _, _ = D(interpolates, interpolates_low_res)
     # Fake labels for interpolated samples (all ones)
     fake = torch.ones((real_input.size(0), 1), device = device)
 
     # Calculate gradients w.r.t. interpolated samples
     gradients = torch.autograd.grad(
-        outputs = d_interpolates,
-        inputs = interpolates,
+        outputs = output,
+        inputs = (interpolates, interpolates_low_res),
         grad_outputs = fake,
         allow_unused = True)[0]
     
@@ -242,6 +242,7 @@ def calculate_gradient_penalty(D, real_input, real_low_res, fake_input, fake_low
     # print(f"gradient penalty: {gradient_penalty}")
     
     return gradient_penalty
+
 
 
 def train_loop():
@@ -266,7 +267,7 @@ def train_loop():
 
     # train configs
     batch_size = 100
-    max_epoch = 300  # default: 300
+    max_epoch = 100  # default: 300
     val_inerval = 10
     checkpoint_interval = 10
     lr = 0.0001
@@ -345,7 +346,8 @@ def train_loop():
         for epoch in range(1, max_epoch+1):
             # discriminatorに渡す画像の重みの計算
             # noise_weight_rate = max_noise - (noise_rate*(epoch - 1))
-            noise_weight_rate = noise_schedule(epoch, 0.03, 100, 200)
+            # noise_weight_rate = noise_schedule(epoch, 0.03, 100, 200)
+            noise_weight_rate = noise_schedule(epoch, 0.02, 100, 200)
             train( 
                 dataloader_train, 
                 generator, discriminator, 
